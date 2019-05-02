@@ -11,7 +11,7 @@ impl FirefoxHost {
     pub fn new<T: Into<String>>(path: T) -> Self {
         FirefoxHost {
             name: "com.samhh.bukubrow",
-            description: "Bukubrow binary for the Firefox extension",
+            description: "Bukubrow host for the Firefox extension",
             path: path.into(),
             r#type: "stdio",
             allowed_extensions: ["bukubrow@samhh.com"],

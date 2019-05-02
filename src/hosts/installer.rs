@@ -12,8 +12,8 @@ pub fn install_host(browser: &Browser) -> Result<(), &'static str> {
     let host_path = get_host_path(&browser)?;
     fs::create_dir_all(&host_path).map_err(|_| "Failed to create native messaging directory.")?;
 
-    // Determine path of self/binary
-    let exe_err_str = "Could not determine location of Bukubrow binary.";
+    // Determine path of self/executable
+    let exe_err_str = "Could not determine location of Bukubrow executable.";
     let exe_path = std::env::current_exe()
         .map_err(|_| exe_err_str)
         .and_then(|path| path.into_os_string().into_string().map_err(|_| exe_err_str))?;

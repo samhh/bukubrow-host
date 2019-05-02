@@ -9,15 +9,15 @@ jobs:
     displayName: Install Rust
   - ${{ if eq(parameters.name, 'Linux') }}:
     - script: make build-linux-x64
-      displayName: Build binary (Linux)
+      displayName: Build host (Linux)
     - task: PublishPipelineArtifact@0
       inputs:
-        artifactName: Binary for Linux
+        artifactName: Host for Linux
         targetPath: release/
   - ${{ if eq(parameters.name, 'macOS') }}:
     - script: make build-darwin-x64
-      displayName: Build binary (macOS)
+      displayName: Build host (macOS)
     - task: PublishPipelineArtifact@0
       inputs:
-        artifactName: Binary for macOS
+        artifactName: Host for macOS
         targetPath: release/

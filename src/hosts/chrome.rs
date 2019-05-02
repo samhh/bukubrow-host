@@ -12,7 +12,7 @@ impl ChromeHost {
     pub fn new<T: Into<String>>(path: T) -> Self {
         ChromeHost {
             name: "com.samhh.bukubrow",
-            description: "Bukubrow binary for the Chrome extension",
+            description: "Bukubrow host for the Chrome extension",
             path: path.into(),
             r#type: "stdio",
             allowed_origins: ["chrome-extension://ghniladkapjacfajiooekgkfopkjblpn/"],

@@ -13,9 +13,7 @@ jobs:
       curl https://sh.rustup.rs -sSf | sh -s -- -y
       $HOME/.cargo/bin/rustup component add rustfmt
     displayName: Install Rust stable
-  - script: |
-      cd binary
-      $HOME/.cargo/bin/cargo fmt -- --check
+  - script: $HOME/.cargo/bin/cargo fmt -- --check
     displayName: Run rustfmt
 
 - template: ./azure-pipelines-template.yml
