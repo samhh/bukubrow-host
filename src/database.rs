@@ -7,7 +7,7 @@ pub type BookmarkId = i32;
 pub struct Bookmark {
     pub id: Option<BookmarkId>,
     url: String,
-    metadata: String,
+    pub metadata: String,
     tags: String,
     desc: String,
     flags: i32,
