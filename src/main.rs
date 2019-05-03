@@ -28,14 +28,19 @@ fn main() {
         for browser in args {
             let installed = install_host(&browser);
 
-            if installed.is_err() {
-                println!(
-                    "Failed to install host for {:?}: {:?}",
-                    &browser,
-                    installed.unwrap()
-                );
-                std::process::exit(1);
-            }
+            match installed {
+                Ok(path) => {
+                    println!(
+                        "Successfully installed host for {:?} to:\n\t{:?}",
+                        &browser, path,
+                    );
+                }
+                Err(err) => {
+                    println!("Failed to install host for {:?}:\n\t{}", &browser, err,);
+
+                    std::process::exit(1);
+                }
+            };
         }
 
         std::process::exit(0);

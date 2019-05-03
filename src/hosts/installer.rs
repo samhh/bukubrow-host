@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 const NM_FILENAME: &'static str = "com.samhh.bukubrow.json";
 
-pub fn install_host(browser: &Browser) -> Result<(), &'static str> {
+pub fn install_host(browser: &Browser) -> Result<PathBuf, &'static str> {
     // Create native messaging path if it doesn't already exist
     let host_path = get_host_path(&browser)?;
     fs::create_dir_all(&host_path).map_err(|_| "Failed to create native messaging directory.")?;
@@ -21,10 +21,10 @@ pub fn install_host(browser: &Browser) -> Result<(), &'static str> {
     // Create JSON file
     let full_write_path = PathBuf::from(host_path).join(NM_FILENAME);
     let mut file =
-        fs::File::create(full_write_path).map_err(|_| "Failed to create browser host file.")?;
+        fs::File::create(&full_write_path).map_err(|_| "Failed to create browser host file.")?;
 
     // Write to created file
-    let write = match browser {
+    match browser {
         Browser::Chrome | Browser::Chromium => file.write_all(
             &serde_json::to_string(&ChromeHost::new(exe_path))
                 .map_err(|_| "Failed to serialise Chrome/Chromium browser host.")?
@@ -36,7 +36,7 @@ pub fn install_host(browser: &Browser) -> Result<(), &'static str> {
                 .as_bytes(),
         ),
     }
-    .map_err(|_| "Failed to write to browser host file.");
+    .map_err(|_| "Failed to write to browser host file.")?;
 
-    write
+    Ok(full_write_path)
 }
