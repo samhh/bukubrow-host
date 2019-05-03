@@ -1,7 +1,12 @@
 use crate::hosts::paths::Browser;
 use clap::{crate_authors, crate_name, crate_version, App, Arg, Error};
 
-pub fn init() -> Result<Vec<Browser>, Error> {
+/// Initialises the CLI interface and determines if the user has requested the
+/// installation of any hosts. Said request is the inner value of Ok. An Err
+/// value denotes a parsing error, most likely meaning unrecognised flag(s)
+/// were passed. This includes help and version flags which must be handled
+/// outside this function.
+pub fn init() -> Result<Option<Vec<Browser>>, Error> {
     let chrome_arg = "chrome";
     let chromium_arg = "chromium";
     let firefox_arg = "firefox";
@@ -43,5 +48,9 @@ pub fn init() -> Result<Vec<Browser>, Error> {
         to_install.push(Browser::Firefox);
     }
 
-    Ok(to_install)
+    Ok(if to_install.is_empty() {
+        None
+    } else {
+        Some(to_install)
+    })
 }

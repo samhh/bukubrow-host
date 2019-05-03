@@ -17,14 +17,14 @@ use clap::ErrorKind;
 fn main() {
     // Native messaging can provide its own arguments we don't care about, so
     // ignore any unrecognised arguments
-    let args = cli::init().unwrap_or_else(|err| match err.kind {
+    let wants_install = cli::init().unwrap_or_else(|err| match err.kind {
         ErrorKind::HelpDisplayed | ErrorKind::VersionDisplayed => err.exit(),
-        _ => Vec::new(),
+        _ => None,
     });
 
     // If installation arguments are supplied then assume we're installing
     // instead of messaging, so install all requested and exit
-    if !args.is_empty() {
+    if let Some(args) = wants_install {
         for browser in args {
             let installed = install_host(&browser);
 
