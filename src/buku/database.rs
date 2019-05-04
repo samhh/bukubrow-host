@@ -1,17 +1,32 @@
+use super::types::{Bookmark, BookmarkId};
 pub use rusqlite::Error as DbError;
 use rusqlite::{types::ToSql, Connection, Row, NO_PARAMS};
+use std::env;
+use std::io;
 use std::path::PathBuf;
 
-pub type BookmarkId = i32;
+/// Determine path to database from environment variables.
+pub fn get_db_path() -> Result<PathBuf, io::Error> {
+    let db_filename = "bookmarks.db";
 
-#[derive(Serialize, Deserialize)]
-pub struct Bookmark {
-    pub id: Option<BookmarkId>,
-    pub url: String,
-    pub metadata: String,
-    pub tags: String,
-    pub desc: String,
-    pub flags: i32,
+    let dir: Result<PathBuf, env::VarError> = match env::var("XDG_DATA_HOME") {
+        Ok(xdg_home) => Ok(PathBuf::from(xdg_home + "/buku/")),
+        _ => match env::var("HOME") {
+            Ok(home) => Ok(PathBuf::from(home + "/.local/share/buku/")),
+            Err(err) => Err(err),
+        },
+    };
+
+    if let Ok(mut path) = dir {
+        path.push(db_filename);
+
+        return Ok(path);
+    } else {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            "Failed to find Buku database.",
+        ));
+    }
 }
 
 pub trait BukuDatabase {
@@ -35,18 +50,18 @@ impl SqliteDatabase {
 
         Ok(instance)
     }
+}
 
-    // Supply defaults for nullable fields (per SQLite schema)
-    fn map_db_bookmark(row: &Row) -> Result<Bookmark, DbError> {
-        Ok(Bookmark {
-            id: row.get(0)?,
-            url: row.get(1).unwrap_or_default(),
-            metadata: row.get(2).unwrap_or_default(),
-            tags: row.get(3).unwrap_or_default(),
-            desc: row.get(4).unwrap_or_default(),
-            flags: row.get(5).unwrap_or_default(),
-        })
-    }
+// Supply defaults for nullable fields (per SQLite schema)
+fn map_db_bookmark(row: &Row) -> Result<Bookmark, DbError> {
+    Ok(Bookmark {
+        id: row.get(0)?,
+        url: row.get(1).unwrap_or_default(),
+        metadata: row.get(2).unwrap_or_default(),
+        tags: row.get(3).unwrap_or_default(),
+        desc: row.get(4).unwrap_or_default(),
+        flags: row.get(5).unwrap_or_default(),
+    })
 }
 
 impl BukuDatabase for SqliteDatabase {
@@ -55,7 +70,7 @@ impl BukuDatabase for SqliteDatabase {
         let query = "SELECT * FROM bookmarks;";
         let mut stmt = self.connection.prepare(query)?;
 
-        let rows = stmt.query_map(NO_PARAMS, SqliteDatabase::map_db_bookmark)?;
+        let rows = stmt.query_map(NO_PARAMS, map_db_bookmark)?;
 
         let bookmarks: Vec<Bookmark> = rows.filter_map(|x| x.ok()).collect();
 
@@ -71,7 +86,7 @@ impl BukuDatabase for SqliteDatabase {
                 .join(", ")
         );
         let mut stmt = self.connection.prepare(&query)?;
-        let rows = stmt.query_map(NO_PARAMS, SqliteDatabase::map_db_bookmark)?;
+        let rows = stmt.query_map(NO_PARAMS, map_db_bookmark)?;
 
         let bookmarks: Vec<Bookmark> = rows.filter_map(|x| x.ok()).collect();
 

@@ -1,5 +1,5 @@
-use super::chrome::ChromeHost;
-use super::firefox::FirefoxHost;
+use super::targets::chrome::ChromeHost;
+use super::targets::firefox::FirefoxHost;
 use super::paths::{get_host_path, Browser};
 use std::fs;
 use std::io::Write;

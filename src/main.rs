@@ -5,12 +5,11 @@ extern crate serde_derive;
 
 mod buku;
 mod cli;
-mod database;
 mod hosts;
 mod server;
 
+use crate::buku::database::{get_db_path, BukuDatabase, SqliteDatabase};
 use crate::cli::{exit_with_stdout_err, Argument, CliError};
-use crate::database::{BukuDatabase, SqliteDatabase};
 use crate::hosts::installer::install_host;
 use crate::server::Server;
 use clap::ErrorKind;
@@ -51,7 +50,7 @@ fn main() {
                     };
                 }
                 Argument::ListBookmarks => {
-                    let path = buku::get_db_path().unwrap();
+                    let path = get_db_path().unwrap();
                     let db = SqliteDatabase::new(&path).unwrap();
                     let bms = db.get_all_bookmarks().unwrap();
 
@@ -62,7 +61,7 @@ fn main() {
                     }
                 }
                 Argument::OpenBookmarks(ids) => {
-                    let path = buku::get_db_path().unwrap();
+                    let path = get_db_path().unwrap();
                     let db = SqliteDatabase::new(&path).unwrap();
                     let bms = db.get_bookmarks_by_id(ids).unwrap();
 
@@ -77,7 +76,7 @@ fn main() {
     }
 
     // No installation arguments supplied, proceed with native messaging
-    let path = buku::get_db_path().unwrap();
+    let path = get_db_path().unwrap();
     let db = SqliteDatabase::new(&path).unwrap();
     let server = Server::new(db);
 

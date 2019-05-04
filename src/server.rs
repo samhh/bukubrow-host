@@ -1,4 +1,5 @@
-use crate::database::{Bookmark, BookmarkId, BukuDatabase};
+use crate::buku::database::BukuDatabase;
+use crate::buku::types::{Bookmark, BookmarkId};
 use chrome_native_messaging::{errors, event_loop, write_output};
 use clap::crate_version;
 use serde_json;
@@ -173,7 +174,7 @@ impl<T: BukuDatabase> Server<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::database::{BukuDatabase, DbError};
+    use crate::buku::database::{BukuDatabase, DbError};
 
     fn shared_mock_update_id() -> usize {
         1234
