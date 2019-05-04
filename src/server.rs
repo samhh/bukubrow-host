@@ -70,7 +70,7 @@ impl Server {
     }
 
     fn get(&self) -> JSON {
-        let bookmarks = self.db.get_bookmarks();
+        let bookmarks = self.db.get_all_bookmarks();
 
         match bookmarks {
             Ok(bm) => json!({

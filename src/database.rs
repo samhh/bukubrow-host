@@ -1,4 +1,4 @@
-use rusqlite::{types::ToSql, Connection, Error as DbError, NO_PARAMS};
+use rusqlite::{types::ToSql, Connection, Error as DbError, Row, NO_PARAMS};
 use std::path::PathBuf;
 
 pub type BookmarkId = i32;
@@ -6,10 +6,10 @@ pub type BookmarkId = i32;
 #[derive(Serialize, Deserialize)]
 pub struct Bookmark {
     pub id: Option<BookmarkId>,
-    url: String,
+    pub url: String,
     pub metadata: String,
-    tags: String,
-    desc: String,
+    pub tags: String,
+    pub desc: String,
     flags: i32,
 }
 
@@ -27,22 +27,40 @@ impl SqliteDatabase {
         Ok(instance)
     }
 
+    // Supply defaults for nullable fields (per SQLite schema)
+    fn map_db_bookmark(row: &Row) -> Result<Bookmark, DbError> {
+        Ok(Bookmark {
+            id: row.get(0)?,
+            url: row.get(1).unwrap_or_default(),
+            metadata: row.get(2).unwrap_or_default(),
+            tags: row.get(3).unwrap_or_default(),
+            desc: row.get(4).unwrap_or_default(),
+            flags: row.get(5).unwrap_or_default(),
+        })
+    }
+
     // Get bookmarks from database
-    pub fn get_bookmarks(&self) -> Result<Vec<Bookmark>, DbError> {
+    pub fn get_all_bookmarks(&self) -> Result<Vec<Bookmark>, DbError> {
         let query = "SELECT * FROM bookmarks;";
         let mut stmt = self.connection.prepare(query)?;
 
-        // Supply defaults for nullable fields (per SQLite schema)
-        let rows = stmt.query_map(NO_PARAMS, |row| {
-            Ok(Bookmark {
-                id: row.get(0)?,
-                url: row.get(1).unwrap_or_default(),
-                metadata: row.get(2).unwrap_or_default(),
-                tags: row.get(3).unwrap_or_default(),
-                desc: row.get(4).unwrap_or_default(),
-                flags: row.get(5).unwrap_or_default(),
-            })
-        })?;
+        let rows = stmt.query_map(NO_PARAMS, SqliteDatabase::map_db_bookmark)?;
+
+        let bookmarks: Vec<Bookmark> = rows.filter_map(|x| x.ok()).collect();
+
+        Ok(bookmarks)
+    }
+
+    pub fn get_bookmarks_by_id(&self, ids: Vec<BookmarkId>) -> Result<Vec<Bookmark>, DbError> {
+        let query = format!(
+            "SELECT * FROM bookmarks WHERE id IN ({});",
+            ids.iter()
+                .map(|n| n.to_string())
+                .collect::<Vec<String>>()
+                .join(", ")
+        );
+        let mut stmt = self.connection.prepare(&query)?;
+        let rows = stmt.query_map(NO_PARAMS, SqliteDatabase::map_db_bookmark)?;
 
         let bookmarks: Vec<Bookmark> = rows.filter_map(|x| x.ok()).collect();
 
