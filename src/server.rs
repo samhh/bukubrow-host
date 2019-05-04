@@ -212,7 +212,10 @@ mod tests {
                 Ok(Vec::new())
             }
 
-            fn get_bookmarks_by_id(&self, _ids: Vec<BookmarkId>) -> Result<Vec<SavedBookmark>, DbError> {
+            fn get_bookmarks_by_id(
+                &self,
+                _ids: Vec<BookmarkId>,
+            ) -> Result<Vec<SavedBookmark>, DbError> {
                 Ok(Vec::new())
             }
 

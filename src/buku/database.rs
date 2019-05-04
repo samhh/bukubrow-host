@@ -44,7 +44,8 @@ impl BukuDatabase for SqliteDatabase {
         let query = "SELECT * FROM bookmarks;";
         let mut stmt = self.connection.prepare(query)?;
 
-        let bookmarks = stmt.query_map(NO_PARAMS, map_db_bookmark)?
+        let bookmarks = stmt
+            .query_map(NO_PARAMS, map_db_bookmark)?
             .filter_map(|bm| bm.ok())
             .collect();
 
@@ -61,7 +62,8 @@ impl BukuDatabase for SqliteDatabase {
         );
         let mut stmt = self.connection.prepare(&query)?;
 
-        let bookmarks = stmt.query_map(NO_PARAMS, map_db_bookmark)?
+        let bookmarks = stmt
+            .query_map(NO_PARAMS, map_db_bookmark)?
             .filter_map(|bm| bm.ok())
             .collect();
 
