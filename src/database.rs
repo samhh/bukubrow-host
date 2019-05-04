@@ -1,4 +1,5 @@
-use rusqlite::{types::ToSql, Connection, Error as DbError, Row, NO_PARAMS};
+pub use rusqlite::Error as DbError;
+use rusqlite::{types::ToSql, Connection, Row, NO_PARAMS};
 use std::path::PathBuf;
 
 pub type BookmarkId = i32;
@@ -10,7 +11,15 @@ pub struct Bookmark {
     pub metadata: String,
     pub tags: String,
     pub desc: String,
-    flags: i32,
+    pub flags: i32,
+}
+
+pub trait BukuDatabase {
+    fn get_all_bookmarks(&self) -> Result<Vec<Bookmark>, DbError>;
+    fn get_bookmarks_by_id(&self, ids: Vec<BookmarkId>) -> Result<Vec<Bookmark>, DbError>;
+    fn add_bookmark(&self, bm: &Bookmark) -> Result<usize, DbError>;
+    fn update_bookmark(&self, bm: &Bookmark) -> Result<usize, DbError>;
+    fn delete_bookmark(&self, bm_id: &BookmarkId) -> Result<usize, DbError>;
 }
 
 pub struct SqliteDatabase {
@@ -38,9 +47,11 @@ impl SqliteDatabase {
             flags: row.get(5).unwrap_or_default(),
         })
     }
+}
 
+impl BukuDatabase for SqliteDatabase {
     // Get bookmarks from database
-    pub fn get_all_bookmarks(&self) -> Result<Vec<Bookmark>, DbError> {
+    fn get_all_bookmarks(&self) -> Result<Vec<Bookmark>, DbError> {
         let query = "SELECT * FROM bookmarks;";
         let mut stmt = self.connection.prepare(query)?;
 
@@ -51,7 +62,7 @@ impl SqliteDatabase {
         Ok(bookmarks)
     }
 
-    pub fn get_bookmarks_by_id(&self, ids: Vec<BookmarkId>) -> Result<Vec<Bookmark>, DbError> {
+    fn get_bookmarks_by_id(&self, ids: Vec<BookmarkId>) -> Result<Vec<Bookmark>, DbError> {
         let query = format!(
             "SELECT * FROM bookmarks WHERE id IN ({});",
             ids.iter()
@@ -68,7 +79,7 @@ impl SqliteDatabase {
     }
 
     // Save bookmark to database
-    pub fn add_bookmark(&self, bm: &Bookmark) -> Result<usize, DbError> {
+    fn add_bookmark(&self, bm: &Bookmark) -> Result<usize, DbError> {
         let query =
             "INSERT INTO bookmarks(metadata, desc, tags, url, flags) VALUES (?1, ?2, ?3, ?4, ?5);";
         let exec = self.connection.execute(
@@ -86,7 +97,7 @@ impl SqliteDatabase {
     }
 
     // Update bookmark in database by ID
-    pub fn update_bookmark(&self, bm: &Bookmark) -> Result<usize, DbError> {
+    fn update_bookmark(&self, bm: &Bookmark) -> Result<usize, DbError> {
         let query = "UPDATE bookmarks SET (metadata, desc, tags, url, flags) = (?2, ?3, ?4, ?5, ?6) WHERE id = ?1;";
         let exec = self.connection.execute(
             query,
@@ -104,7 +115,7 @@ impl SqliteDatabase {
     }
 
     // Delete bookmark from database by ID
-    pub fn delete_bookmark(&self, bm_id: &BookmarkId) -> Result<usize, DbError> {
+    fn delete_bookmark(&self, bm_id: &BookmarkId) -> Result<usize, DbError> {
         let query = "DELETE FROM bookmarks WHERE id = ?1;";
         let exec = self.connection.execute(query, &[bm_id]);
 

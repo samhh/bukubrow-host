@@ -10,7 +10,7 @@ mod hosts;
 mod server;
 
 use crate::cli::{exit_with_stdout_err, Argument, CliError};
-use crate::database::SqliteDatabase;
+use crate::database::{BukuDatabase, SqliteDatabase};
 use crate::hosts::installer::install_host;
 use crate::server::Server;
 use clap::ErrorKind;
