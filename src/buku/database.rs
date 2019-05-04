@@ -1,13 +1,13 @@
-use super::types::{Bookmark, BookmarkId};
+use super::types::{BookmarkId, SavedBookmark, UnsavedBookmark};
 pub use rusqlite::Error as DbError;
 use rusqlite::{types::ToSql, Connection, Row, NO_PARAMS};
 use std::path::PathBuf;
 
 pub trait BukuDatabase {
-    fn get_all_bookmarks(&self) -> Result<Vec<Bookmark>, DbError>;
-    fn get_bookmarks_by_id(&self, ids: Vec<BookmarkId>) -> Result<Vec<Bookmark>, DbError>;
-    fn add_bookmark(&self, bm: &Bookmark) -> Result<usize, DbError>;
-    fn update_bookmark(&self, bm: &Bookmark) -> Result<usize, DbError>;
+    fn get_all_bookmarks(&self) -> Result<Vec<SavedBookmark>, DbError>;
+    fn get_bookmarks_by_id(&self, ids: Vec<BookmarkId>) -> Result<Vec<SavedBookmark>, DbError>;
+    fn add_bookmark(&self, bm: &UnsavedBookmark) -> Result<usize, DbError>;
+    fn update_bookmark(&self, bm: &SavedBookmark) -> Result<usize, DbError>;
     fn delete_bookmark(&self, bm_id: &BookmarkId) -> Result<usize, DbError>;
 }
 
@@ -27,8 +27,8 @@ impl SqliteDatabase {
 }
 
 // Supply defaults for nullable fields (per SQLite schema)
-fn map_db_bookmark(row: &Row) -> Result<Bookmark, DbError> {
-    Ok(Bookmark {
+fn map_db_bookmark(row: &Row) -> Result<SavedBookmark, DbError> {
+    Ok(SavedBookmark {
         id: row.get(0)?,
         url: row.get(1).unwrap_or_default(),
         metadata: row.get(2).unwrap_or_default(),
@@ -40,18 +40,18 @@ fn map_db_bookmark(row: &Row) -> Result<Bookmark, DbError> {
 
 impl BukuDatabase for SqliteDatabase {
     // Get bookmarks from database
-    fn get_all_bookmarks(&self) -> Result<Vec<Bookmark>, DbError> {
+    fn get_all_bookmarks(&self) -> Result<Vec<SavedBookmark>, DbError> {
         let query = "SELECT * FROM bookmarks;";
         let mut stmt = self.connection.prepare(query)?;
 
-        let rows = stmt.query_map(NO_PARAMS, map_db_bookmark)?;
-
-        let bookmarks: Vec<Bookmark> = rows.filter_map(|x| x.ok()).collect();
+        let bookmarks = stmt.query_map(NO_PARAMS, map_db_bookmark)?
+            .filter_map(|bm| bm.ok())
+            .collect();
 
         Ok(bookmarks)
     }
 
-    fn get_bookmarks_by_id(&self, ids: Vec<BookmarkId>) -> Result<Vec<Bookmark>, DbError> {
+    fn get_bookmarks_by_id(&self, ids: Vec<BookmarkId>) -> Result<Vec<SavedBookmark>, DbError> {
         let query = format!(
             "SELECT * FROM bookmarks WHERE id IN ({});",
             ids.iter()
@@ -60,15 +60,16 @@ impl BukuDatabase for SqliteDatabase {
                 .join(", ")
         );
         let mut stmt = self.connection.prepare(&query)?;
-        let rows = stmt.query_map(NO_PARAMS, map_db_bookmark)?;
 
-        let bookmarks: Vec<Bookmark> = rows.filter_map(|x| x.ok()).collect();
+        let bookmarks = stmt.query_map(NO_PARAMS, map_db_bookmark)?
+            .filter_map(|bm| bm.ok())
+            .collect();
 
         Ok(bookmarks)
     }
 
     // Save bookmark to database
-    fn add_bookmark(&self, bm: &Bookmark) -> Result<usize, DbError> {
+    fn add_bookmark(&self, bm: &UnsavedBookmark) -> Result<usize, DbError> {
         let query =
             "INSERT INTO bookmarks(metadata, desc, tags, url, flags) VALUES (?1, ?2, ?3, ?4, ?5);";
         let exec = self.connection.execute(
@@ -86,12 +87,12 @@ impl BukuDatabase for SqliteDatabase {
     }
 
     // Update bookmark in database by ID
-    fn update_bookmark(&self, bm: &Bookmark) -> Result<usize, DbError> {
+    fn update_bookmark(&self, bm: &SavedBookmark) -> Result<usize, DbError> {
         let query = "UPDATE bookmarks SET (metadata, desc, tags, url, flags) = (?2, ?3, ?4, ?5, ?6) WHERE id = ?1;";
         let exec = self.connection.execute(
             query,
             &[
-                &bm.id.unwrap(),
+                &bm.id,
                 &bm.metadata as &ToSql,
                 &bm.desc,
                 &bm.tags,

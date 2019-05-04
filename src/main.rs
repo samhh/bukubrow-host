@@ -61,9 +61,7 @@ fn main() {
                         Argument::ListBookmarks => match db.get_all_bookmarks() {
                             Ok(bms) => {
                                 for bm in bms {
-                                    if let Some(id) = bm.id {
-                                        println!("{} {}", id, bm.metadata);
-                                    }
+                                    println!("{} {}", bm.id, bm.metadata);
                                 }
                             }
                             Err(_) => {

@@ -1,5 +1,5 @@
 use crate::buku::database::BukuDatabase;
-use crate::buku::types::{Bookmark, BookmarkId};
+use crate::buku::types::{BookmarkId, SavedBookmark, UnsavedBookmark};
 use chrome_native_messaging::{errors, event_loop, write_output};
 use clap::crate_version;
 use serde_json;
@@ -44,14 +44,14 @@ struct RequestData<T> {
 
 #[derive(Deserialize)]
 struct RequestDataPost {
-    bookmark: Bookmark,
+    bookmark: UnsavedBookmark,
 }
 
 type PostRequest = RequestData<RequestDataPost>;
 
 #[derive(Deserialize)]
 struct RequestDataPut {
-    bookmark: Bookmark,
+    bookmark: SavedBookmark,
 }
 
 type PutRequest = RequestData<RequestDataPut>;
@@ -137,7 +137,7 @@ impl<T: BukuDatabase> Server<T> {
         })
     }
 
-    fn post(&self, db: &T, bm: &Bookmark) -> JSON {
+    fn post(&self, db: &T, bm: &UnsavedBookmark) -> JSON {
         let added = db.add_bookmark(&bm);
 
         if let Ok(id) = added {
@@ -150,16 +150,16 @@ impl<T: BukuDatabase> Server<T> {
         }
     }
 
-    fn put(&self, db: &T, bm: &Bookmark) -> JSON {
-        let updated = bm.id.is_some() && db.update_bookmark(&bm).is_ok();
+    fn put(&self, db: &T, bm: &SavedBookmark) -> JSON {
+        let update = db.update_bookmark(&bm);
 
-        json!({ "success": updated })
+        json!({ "success": update.is_ok() })
     }
 
     fn delete(&self, db: &T, bm_id: &BookmarkId) -> JSON {
-        let deleted = db.delete_bookmark(&bm_id);
+        let deletion = db.delete_bookmark(&bm_id);
 
-        json!({ "success": deleted.is_ok() })
+        json!({ "success": deletion.is_ok() })
     }
 
     fn fail_generic(&self) -> JSON {
@@ -208,19 +208,19 @@ mod tests {
         struct BukuMock {}
 
         impl BukuDatabase for BukuMock {
-            fn get_all_bookmarks(&self) -> Result<Vec<Bookmark>, DbError> {
+            fn get_all_bookmarks(&self) -> Result<Vec<SavedBookmark>, DbError> {
                 Ok(Vec::new())
             }
 
-            fn get_bookmarks_by_id(&self, _ids: Vec<BookmarkId>) -> Result<Vec<Bookmark>, DbError> {
+            fn get_bookmarks_by_id(&self, _ids: Vec<BookmarkId>) -> Result<Vec<SavedBookmark>, DbError> {
                 Ok(Vec::new())
             }
 
-            fn add_bookmark(&self, _bm: &Bookmark) -> Result<usize, DbError> {
+            fn add_bookmark(&self, _bm: &UnsavedBookmark) -> Result<usize, DbError> {
                 Ok(shared_mock_update_id())
             }
 
-            fn update_bookmark(&self, _bm: &Bookmark) -> Result<usize, DbError> {
+            fn update_bookmark(&self, _bm: &SavedBookmark) -> Result<usize, DbError> {
                 Ok(shared_mock_update_id())
             }
 
@@ -238,9 +238,19 @@ mod tests {
         Server { db: Err(err) }
     }
 
-    fn create_example_bookmark() -> Bookmark {
-        Bookmark {
-            id: Some(0),
+    fn create_example_saved_bookmark() -> SavedBookmark {
+        SavedBookmark {
+            id: 0,
+            url: String::from("https://samhh.com"),
+            metadata: String::from("title"),
+            tags: String::from(""),
+            desc: String::from("description"),
+            flags: 0,
+        }
+    }
+
+    fn create_example_unsaved_bookmark() -> UnsavedBookmark {
+        UnsavedBookmark {
             url: String::from("https://samhh.com"),
             metadata: String::from("title"),
             tags: String::from(""),
@@ -299,7 +309,7 @@ mod tests {
 
         assert_eq!(
             server.router(json!({ "method": "GET" })),
-            json!({ "success": true, "bookmarks": Vec::<Bookmark>::new() }),
+            json!({ "success": true, "bookmarks": Vec::<SavedBookmark>::new() }),
         );
     }
 
@@ -326,7 +336,7 @@ mod tests {
             server.router(json!({
                 "method": "POST",
                 "data": {
-                    "bookmark": create_example_bookmark(),
+                    "bookmark": create_example_unsaved_bookmark(),
                 },
             })),
             json!({
@@ -349,7 +359,7 @@ mod tests {
             server.router(json!({
                 "method": "PUT",
                 "data": {
-                    "bookmark": create_example_bookmark(),
+                    "bookmark": create_example_saved_bookmark(),
                 },
             })),
             json!({ "success": true }),
