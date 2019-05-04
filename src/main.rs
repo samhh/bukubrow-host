@@ -11,13 +11,19 @@ mod server;
 use crate::buku::database::{get_db_path, BukuDatabase, SqliteDatabase};
 use crate::cli::{exit_with_stdout_err, Argument, CliError};
 use crate::hosts::installer::install_host;
-use crate::server::Server;
+use crate::server::{map_init_err_friendly_msg, InitError, Server};
 use clap::ErrorKind;
 
 fn main() {
+    let db = get_db_path()
+        .map_err(|_| InitError::FailedToLocateBukuDatabase)
+        .and_then(|path| {
+            SqliteDatabase::new(&path).map_err(|_| InitError::FailedToAccessBukuDatabase)
+        });
+
     // Native messaging can provide its own arguments we don't care about, so
     // ignore any unrecognised arguments
-    let args_maybe = cli::init().unwrap_or_else(|err| match err {
+    let recognised_args = cli::init().unwrap_or_else(|err| match err {
         CliError::Clap(clap_err) => match clap_err.kind {
             ErrorKind::HelpDisplayed | ErrorKind::VersionDisplayed => clap_err.exit(),
             _ => None,
@@ -28,57 +34,70 @@ fn main() {
     });
 
     // Only continue to native messaging if no recognised flags are found
-    if let Some(args) = args_maybe {
-        for arg in args {
-            match arg {
-                Argument::InstallBrowserHost(browser) => {
-                    let installed = install_host(&browser);
+    if let Some(args) = recognised_args {
+        match db {
+            Ok(db) => {
+                for arg in args {
+                    match arg {
+                        Argument::InstallBrowserHost(browser) => {
+                            let installed = install_host(&browser);
 
-                    match installed {
-                        Ok(path) => {
-                            println!(
-                                "Successfully installed host for {:?} to:\n\t{:?}",
-                                &browser, path,
-                            );
+                            match installed {
+                                Ok(path) => {
+                                    println!(
+                                        "Successfully installed host for {:?} to:\n\t{:?}",
+                                        &browser, path,
+                                    );
+                                }
+                                Err(err) => {
+                                    exit_with_stdout_err(format!(
+                                        "Failed to install host for {:?}:\n\t{}",
+                                        &browser, err
+                                    ));
+                                }
+                            };
                         }
-                        Err(err) => {
-                            exit_with_stdout_err(format!(
-                                "Failed to install host for {:?}:\n\t{}",
-                                &browser, err
-                            ));
-                        }
-                    };
-                }
-                Argument::ListBookmarks => {
-                    let path = get_db_path().unwrap();
-                    let db = SqliteDatabase::new(&path).unwrap();
-                    let bms = db.get_all_bookmarks().unwrap();
-
-                    for bm in bms {
-                        if let Some(id) = bm.id {
-                            println!("{} {}", id, bm.metadata);
-                        }
+                        Argument::ListBookmarks => match db.get_all_bookmarks() {
+                            Ok(bms) => {
+                                for bm in bms {
+                                    if let Some(id) = bm.id {
+                                        println!("{} {}", id, bm.metadata);
+                                    }
+                                }
+                            }
+                            Err(_) => {
+                                exit_with_stdout_err("Failed to fetch bookmarks from database.");
+                            }
+                        },
+                        Argument::OpenBookmarks(ids) => match db.get_bookmarks_by_id(ids) {
+                            Ok(bms) => {
+                                for bm in bms {
+                                    if let Err(_) = webbrowser::open(&bm.url) {
+                                        exit_with_stdout_err(
+                                            "Failed to open bookmark in web browser.",
+                                        );
+                                    }
+                                }
+                            }
+                            Err(_) => {
+                                exit_with_stdout_err(
+                                    "Failed to fetch selected bookmarks from database.",
+                                );
+                            }
+                        },
                     }
                 }
-                Argument::OpenBookmarks(ids) => {
-                    let path = get_db_path().unwrap();
-                    let db = SqliteDatabase::new(&path).unwrap();
-                    let bms = db.get_bookmarks_by_id(ids).unwrap();
-
-                    for bm in bms {
-                        webbrowser::open(&bm.url).unwrap();
-                    }
-                }
+            }
+            Err(err) => {
+                exit_with_stdout_err(map_init_err_friendly_msg(&err));
             }
         }
 
         std::process::exit(0);
     }
 
-    // No installation arguments supplied, proceed with native messaging
-    let path = get_db_path().unwrap();
-    let db = SqliteDatabase::new(&path).unwrap();
-    let server = Server::new(db);
-
-    server.listen();
+    // No installation arguments supplied, proceed with native messaging. Do not
+    // exit if cannot find or access Buku database, instead allow server to
+    // communicate that
+    Server::new(db).listen();
 }

@@ -5,6 +5,20 @@ use clap::crate_version;
 use serde_json;
 use std::io;
 
+/// If the server is not provided with a valid database, it needs to know why
+/// so that it can communicate that.
+pub enum InitError {
+    FailedToLocateBukuDatabase,
+    FailedToAccessBukuDatabase,
+}
+
+pub fn map_init_err_friendly_msg(err: &InitError) -> &'static str {
+    match err {
+        InitError::FailedToLocateBukuDatabase => "Failed to locate Buku database.",
+        InitError::FailedToAccessBukuDatabase => "Failed to access Buku database.",
+    }
+}
+
 type JSON = serde_json::Value;
 
 #[derive(Debug, PartialEq)]
@@ -50,11 +64,11 @@ struct RequestDataDelete {
 type DeleteRequest = RequestData<RequestDataDelete>;
 
 pub struct Server<T> {
-    db: T,
+    db: Result<T, InitError>,
 }
 
 impl<T: BukuDatabase> Server<T> {
-    pub fn new(db: T) -> Self {
+    pub fn new(db: Result<T, InitError>) -> Self {
         Self { db }
     }
 
@@ -84,25 +98,28 @@ impl<T: BukuDatabase> Server<T> {
 
     // Route requests per the method
     pub fn router(&self, payload: JSON) -> JSON {
-        match self.method_deserializer(payload.clone()) {
-            Method::Get => self.get(),
-            Method::Options => self.options(),
-            Method::Post => serde_json::from_value::<PostRequest>(payload)
-                .map(|req| self.post(&req.data.bookmark))
-                .unwrap_or_else(|_| self.fail_bad_payload()),
-            Method::Put => serde_json::from_value::<PutRequest>(payload)
-                .map(|req| self.put(&req.data.bookmark))
-                .unwrap_or_else(|_| self.fail_bad_payload()),
-            Method::Delete => serde_json::from_value::<DeleteRequest>(payload)
-                .map(|req| self.delete(&req.data.bookmark_id))
-                .unwrap_or_else(|_| self.fail_bad_payload()),
-            Method::UnknownMethod => self.fail_unknown_method(),
-            Method::NoMethod => self.fail_no_method(),
+        match &self.db {
+            Ok(db) => match self.method_deserializer(payload.clone()) {
+                Method::Get => self.get(&db),
+                Method::Options => self.options(),
+                Method::Post => serde_json::from_value::<PostRequest>(payload)
+                    .map(|req| self.post(&db, &req.data.bookmark))
+                    .unwrap_or_else(|_| self.fail_bad_payload()),
+                Method::Put => serde_json::from_value::<PutRequest>(payload)
+                    .map(|req| self.put(&db, &req.data.bookmark))
+                    .unwrap_or_else(|_| self.fail_bad_payload()),
+                Method::Delete => serde_json::from_value::<DeleteRequest>(payload)
+                    .map(|req| self.delete(&db, &req.data.bookmark_id))
+                    .unwrap_or_else(|_| self.fail_bad_payload()),
+                Method::UnknownMethod => self.fail_unknown_method(),
+                Method::NoMethod => self.fail_no_method(),
+            },
+            Err(err) => self.fail_init_error(err),
         }
     }
 
-    fn get(&self) -> JSON {
-        let bookmarks = self.db.get_all_bookmarks();
+    fn get(&self, db: &T) -> JSON {
+        let bookmarks = db.get_all_bookmarks();
 
         match bookmarks {
             Ok(bm) => json!({
@@ -120,8 +137,8 @@ impl<T: BukuDatabase> Server<T> {
         })
     }
 
-    fn post(&self, bm: &Bookmark) -> JSON {
-        let added = self.db.add_bookmark(&bm);
+    fn post(&self, db: &T, bm: &Bookmark) -> JSON {
+        let added = db.add_bookmark(&bm);
 
         if let Ok(id) = added {
             json!({
@@ -133,14 +150,14 @@ impl<T: BukuDatabase> Server<T> {
         }
     }
 
-    fn put(&self, bm: &Bookmark) -> JSON {
-        let updated = bm.id.is_some() && self.db.update_bookmark(&bm).is_ok();
+    fn put(&self, db: &T, bm: &Bookmark) -> JSON {
+        let updated = bm.id.is_some() && db.update_bookmark(&bm).is_ok();
 
         json!({ "success": updated })
     }
 
-    fn delete(&self, bm_id: &BookmarkId) -> JSON {
-        let deleted = self.db.delete_bookmark(&bm_id);
+    fn delete(&self, db: &T, bm_id: &BookmarkId) -> JSON {
+        let deleted = db.delete_bookmark(&bm_id);
 
         json!({ "success": deleted.is_ok() })
     }
@@ -169,12 +186,19 @@ impl<T: BukuDatabase> Server<T> {
             "message": "Bad request payload."
         })
     }
+
+    fn fail_init_error(&self, err: &InitError) -> JSON {
+        json!({
+            "success": false,
+            "message": map_init_err_friendly_msg(err),
+        })
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::buku::database::{BukuDatabase, DbError};
+    use crate::buku::database::{BukuDatabase, DbError, SqliteDatabase};
 
     fn shared_mock_update_id() -> usize {
         1234
@@ -205,7 +229,13 @@ mod tests {
             }
         }
 
-        Server { db: BukuMock {} }
+        Server {
+            db: Ok(BukuMock {}),
+        }
+    }
+
+    fn create_mocked_server_with_init_err(err: InitError) -> Server<SqliteDatabase> {
+        Server { db: Err(err) }
     }
 
     fn create_example_bookmark() -> Bookmark {
@@ -238,6 +268,28 @@ mod tests {
         assert_eq!(
             server.method_deserializer(json!({ "other": "property" })),
             Method::NoMethod
+        );
+    }
+
+    #[test]
+    fn test_router_with_locate_init_error() {
+        let server_failed_locating =
+            create_mocked_server_with_init_err(InitError::FailedToLocateBukuDatabase);
+
+        assert_eq!(
+            server_failed_locating.router(json!({ "method": "GET" })),
+            server_failed_locating.fail_init_error(&InitError::FailedToLocateBukuDatabase),
+        );
+    }
+
+    #[test]
+    fn test_router_with_access_init_error() {
+        let server_failed_locating =
+            create_mocked_server_with_init_err(InitError::FailedToAccessBukuDatabase);
+
+        assert_eq!(
+            server_failed_locating.router(json!({ "method": "GET" })),
+            server_failed_locating.fail_init_error(&InitError::FailedToAccessBukuDatabase),
         );
     }
 
