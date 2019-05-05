@@ -30,6 +30,8 @@ OPTIONS:
 
 Installing the host and registering it with your browser is required to allow the browser extension to talk to Buku.
 
+If you've installed the host from the [AUR](https://aur.archlinux.org/packages/bukubrow/), skip to step 4.
+
 If you've downloaded a host zip from the [releases page](https://github.com/samhh/bukubrow-host/releases), skip to step 3.
 
 1. Clone the repo.
