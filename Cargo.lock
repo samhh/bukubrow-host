@@ -72,7 +72,7 @@ dependencies = [
 
 [[package]]
 name = "bukubrow"
-version = "4.0.0"
+version = "4.0.1"
 dependencies = [
  "chrome_native_messaging 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 2.33.0 (registry+https://github.com/rust-lang/crates.io-index)",

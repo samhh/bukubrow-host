@@ -1,6 +1,11 @@
 # Change Log
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [4.0.1] - 2019-05-07
+### Changed
+- Fix detection of operating system that failed on some Linux distros.
+- Remove all panics. If something goes awry, make every attempt to communicate this to the consumer via stdout or over native messaging.
+
 ## [4.0.0] - 2019-05-04
 ### Added
 - Self-installation of browser hosts, and removal of any external scripts or data files.
