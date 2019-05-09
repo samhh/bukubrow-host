@@ -1,8 +1,7 @@
 use crate::buku::database::BukuDatabase;
 use crate::buku::types::{BookmarkId, SavedBookmark, UnsavedBookmark};
-use chrome_native_messaging::{errors, event_loop, write_output};
+use crate::native_messaging::{read_input, write_output, NativeMessagingError};
 use clap::crate_version;
-use serde_json;
 use std::io;
 
 /// If the server is not provided with a valid database, it needs to know why
@@ -73,12 +72,19 @@ impl<T: BukuDatabase> Server<T> {
     }
 
     // Listen for native messages from WebExtension in a loop
-    pub fn listen(&self) {
-        event_loop(|payload: JSON| -> Result<(), errors::Error> {
-            let res = self.router(payload);
-
-            write_output(io::stdout(), &res)
-        });
+    pub fn listen(&self) -> Result<(), NativeMessagingError> {
+        loop {
+            match read_input(io::stdin()) {
+                Ok(payload) => {
+                    let res = self.router(payload);
+                    write_output(io::stdout(), &res)?;
+                }
+                Err(err) => match err {
+                    NativeMessagingError::NoMoreInput => break Err(err),
+                    _ => {}
+                },
+            }
+        }
     }
 
     fn method_deserializer(&self, payload: JSON) -> Method {

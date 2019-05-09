@@ -8,7 +8,7 @@ edition = "2018"
 name = "bukubrow"
 
 [dependencies]
-chrome_native_messaging = "0.1"
+byteorder = "1.3"
 clap = "2.33"
 dirs = "1.0"
 rusqlite = { version = "0.17", features = ["bundled"] }
