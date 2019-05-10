@@ -6,12 +6,14 @@ extern crate serde_derive;
 mod buku;
 mod cli;
 mod hosts;
+mod native_messaging;
 mod server;
 
 use crate::buku::database::{BukuDatabase, SqliteDatabase};
 use crate::buku::utils::get_db_path;
 use crate::cli::{exit_with_stdout_err, Argument, CliError};
 use crate::hosts::installer::install_host;
+use crate::native_messaging::NativeMessagingError;
 use crate::server::{map_init_err_friendly_msg, InitError, Server};
 use clap::ErrorKind;
 
@@ -97,6 +99,11 @@ fn main() {
 
     // No installation arguments supplied, proceed with native messaging. Do not
     // exit if cannot find or access Buku database, instead allow server to
-    // communicate that
-    Server::new(db).listen();
+    // communicate that. This is an asynchronous call.
+    let res = Server::new(db).listen();
+
+    match res {
+        Ok(_) | Err(NativeMessagingError::NoMoreInput) => std::process::exit(0),
+        _ => std::process::exit(1),
+    }
 }

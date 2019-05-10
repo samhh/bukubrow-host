@@ -1,4 +1,4 @@
-pub type BookmarkId = i32;
+pub type BookmarkId = u32;
 
 #[derive(Serialize, Deserialize)]
 pub struct SavedBookmark {
