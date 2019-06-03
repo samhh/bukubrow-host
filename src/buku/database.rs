@@ -6,9 +6,9 @@ use std::path::PathBuf;
 pub trait BukuDatabase {
     fn get_all_bookmarks(&self) -> Result<Vec<SavedBookmark>, DbError>;
     fn get_bookmarks_by_id(&self, ids: Vec<BookmarkId>) -> Result<Vec<SavedBookmark>, DbError>;
-    fn add_bookmark(&self, bm: &UnsavedBookmark) -> Result<usize, DbError>;
-    fn update_bookmark(&self, bm: &SavedBookmark) -> Result<usize, DbError>;
-    fn delete_bookmark(&self, bm_id: &BookmarkId) -> Result<usize, DbError>;
+    fn add_bookmarks(&self, bms: &Vec<UnsavedBookmark>) -> Result<Vec<usize>, DbError>;
+    fn update_bookmarks(&self, bms: &Vec<SavedBookmark>) -> Result<Vec<usize>, DbError>;
+    fn delete_bookmarks(&self, bm_id: &Vec<BookmarkId>) -> Result<Vec<usize>, DbError>;
 }
 
 pub struct SqliteDatabase {
@@ -39,7 +39,6 @@ fn map_db_bookmark(row: &Row) -> Result<SavedBookmark, DbError> {
 }
 
 impl BukuDatabase for SqliteDatabase {
-    // Get bookmarks from database
     fn get_all_bookmarks(&self) -> Result<Vec<SavedBookmark>, DbError> {
         let query = "SELECT * FROM bookmarks;";
         let mut stmt = self.connection.prepare(query)?;
@@ -70,47 +69,53 @@ impl BukuDatabase for SqliteDatabase {
         Ok(bookmarks)
     }
 
-    // Save bookmark to database
-    fn add_bookmark(&self, bm: &UnsavedBookmark) -> Result<usize, DbError> {
-        let query =
-            "INSERT INTO bookmarks(metadata, desc, tags, url, flags) VALUES (?1, ?2, ?3, ?4, ?5);";
-        let exec = self.connection.execute(
-            query,
-            &[
-                &bm.metadata,
-                &bm.desc,
-                &bm.tags,
-                &bm.url,
-                &bm.flags as &ToSql,
-            ],
-        );
-
-        exec
+    fn add_bookmarks(&self, bms: &Vec<UnsavedBookmark>) -> Result<Vec<usize>, DbError> {
+        bms
+            .iter()
+            .map(|bm| {
+                let query =
+                    "INSERT INTO bookmarks(metadata, desc, tags, url, flags) VALUES (?1, ?2, ?3, ?4, ?5);";
+                self.connection.execute(
+                    query,
+                    &[
+                        &bm.metadata,
+                        &bm.desc,
+                        &bm.tags,
+                        &bm.url,
+                        &bm.flags as &ToSql,
+                    ],
+                )
+            })
+            .collect()
     }
 
-    // Update bookmark in database by ID
-    fn update_bookmark(&self, bm: &SavedBookmark) -> Result<usize, DbError> {
-        let query = "UPDATE bookmarks SET (metadata, desc, tags, url, flags) = (?2, ?3, ?4, ?5, ?6) WHERE id = ?1;";
-        let exec = self.connection.execute(
-            query,
-            &[
-                &bm.id,
-                &bm.metadata as &ToSql,
-                &bm.desc,
-                &bm.tags,
-                &bm.url,
-                &bm.flags,
-            ],
-        );
-
-        exec
+    fn update_bookmarks(&self, bms: &Vec<SavedBookmark>) -> Result<Vec<usize>, DbError> {
+        bms
+            .iter()
+            .map(|bm| {
+                let query = "UPDATE bookmarks SET (metadata, desc, tags, url, flags) = (?2, ?3, ?4, ?5, ?6) WHERE id = ?1;";
+                self.connection.execute(
+                    query,
+                    &[
+                        &bm.id,
+                        &bm.metadata as &ToSql,
+                        &bm.desc,
+                        &bm.tags,
+                        &bm.url,
+                        &bm.flags,
+                    ],
+                )
+            })
+            .collect()
     }
 
-    // Delete bookmark from database by ID
-    fn delete_bookmark(&self, bm_id: &BookmarkId) -> Result<usize, DbError> {
-        let query = "DELETE FROM bookmarks WHERE id = ?1;";
-        let exec = self.connection.execute(query, &[bm_id]);
-
-        exec
+    fn delete_bookmarks(&self, bm_ids: &Vec<BookmarkId>) -> Result<Vec<usize>, DbError> {
+        bm_ids
+            .iter()
+            .map(|bm_id| {
+                let query = "DELETE FROM bookmarks WHERE id = ?1;";
+                self.connection.execute(query, &[bm_id])
+            })
+            .collect()
     }
 }

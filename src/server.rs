@@ -43,21 +43,21 @@ struct RequestData<T> {
 
 #[derive(Deserialize)]
 struct RequestDataPost {
-    bookmark: UnsavedBookmark,
+    bookmarks: Vec<UnsavedBookmark>,
 }
 
 type PostRequest = RequestData<RequestDataPost>;
 
 #[derive(Deserialize)]
 struct RequestDataPut {
-    bookmark: SavedBookmark,
+    bookmarks: Vec<SavedBookmark>,
 }
 
 type PutRequest = RequestData<RequestDataPut>;
 
 #[derive(Deserialize)]
 struct RequestDataDelete {
-    bookmark_id: BookmarkId,
+    bookmark_ids: Vec<BookmarkId>,
 }
 
 type DeleteRequest = RequestData<RequestDataDelete>;
@@ -109,13 +109,13 @@ impl<T: BukuDatabase> Server<T> {
                 Method::Get => self.get(&db),
                 Method::Options => self.options(),
                 Method::Post => serde_json::from_value::<PostRequest>(payload)
-                    .map(|req| self.post(&db, &req.data.bookmark))
+                    .map(|req| self.post(&db, &req.data.bookmarks))
                     .unwrap_or_else(|_| self.fail_bad_payload()),
                 Method::Put => serde_json::from_value::<PutRequest>(payload)
-                    .map(|req| self.put(&db, &req.data.bookmark))
+                    .map(|req| self.put(&db, &req.data.bookmarks))
                     .unwrap_or_else(|_| self.fail_bad_payload()),
                 Method::Delete => serde_json::from_value::<DeleteRequest>(payload)
-                    .map(|req| self.delete(&db, &req.data.bookmark_id))
+                    .map(|req| self.delete(&db, &req.data.bookmark_ids))
                     .unwrap_or_else(|_| self.fail_bad_payload()),
                 Method::UnknownMethod => self.fail_unknown_method(),
                 Method::NoMethod => self.fail_no_method(),
@@ -143,27 +143,27 @@ impl<T: BukuDatabase> Server<T> {
         })
     }
 
-    fn post(&self, db: &T, bm: &UnsavedBookmark) -> JSON {
-        let added = db.add_bookmark(&bm);
+    fn post(&self, db: &T, bms: &Vec<UnsavedBookmark>) -> JSON {
+        let added = db.add_bookmarks(&bms);
 
-        if let Ok(id) = added {
+        if let Ok(ids) = added {
             json!({
                 "success": true,
-                "id": id,
+                "ids": ids,
             })
         } else {
             self.fail_generic()
         }
     }
 
-    fn put(&self, db: &T, bm: &SavedBookmark) -> JSON {
-        let update = db.update_bookmark(&bm);
+    fn put(&self, db: &T, bms: &Vec<SavedBookmark>) -> JSON {
+        let update = db.update_bookmarks(&bms);
 
         json!({ "success": update.is_ok() })
     }
 
-    fn delete(&self, db: &T, bm_id: &BookmarkId) -> JSON {
-        let deletion = db.delete_bookmark(&bm_id);
+    fn delete(&self, db: &T, bm_ids: &Vec<BookmarkId>) -> JSON {
+        let deletion = db.delete_bookmarks(&bm_ids);
 
         json!({ "success": deletion.is_ok() })
     }
@@ -206,8 +206,8 @@ mod tests {
     use super::*;
     use crate::buku::database::{BukuDatabase, DbError, SqliteDatabase};
 
-    fn shared_mock_update_id() -> usize {
-        1234
+    fn shared_mock_update_ids() -> Vec<usize> {
+        vec![1, 2, 3, 4]
     }
 
     fn create_mocked_server() -> Server<impl BukuDatabase> {
@@ -225,16 +225,16 @@ mod tests {
                 Ok(Vec::new())
             }
 
-            fn add_bookmark(&self, _bm: &UnsavedBookmark) -> Result<usize, DbError> {
-                Ok(shared_mock_update_id())
+            fn add_bookmarks(&self, _bm: &Vec<UnsavedBookmark>) -> Result<Vec<usize>, DbError> {
+                Ok(shared_mock_update_ids())
             }
 
-            fn update_bookmark(&self, _bm: &SavedBookmark) -> Result<usize, DbError> {
-                Ok(shared_mock_update_id())
+            fn update_bookmarks(&self, _bm: &Vec<SavedBookmark>) -> Result<Vec<usize>, DbError> {
+                Ok(shared_mock_update_ids())
             }
 
-            fn delete_bookmark(&self, _bm_id: &BookmarkId) -> Result<usize, DbError> {
-                Ok(shared_mock_update_id())
+            fn delete_bookmarks(&self, _bm_ids: &Vec<BookmarkId>) -> Result<Vec<usize>, DbError> {
+                Ok(shared_mock_update_ids())
             }
         }
 
@@ -247,25 +247,29 @@ mod tests {
         Server { db: Err(err) }
     }
 
-    fn create_example_saved_bookmark() -> SavedBookmark {
-        SavedBookmark {
-            id: 0,
-            url: String::from("https://samhh.com"),
-            metadata: String::from("title"),
-            tags: String::from(""),
-            desc: String::from("description"),
-            flags: 0,
-        }
+    fn create_example_saved_bookmarks() -> Vec<SavedBookmark> {
+        vec![
+            SavedBookmark {
+                id: 0,
+                url: String::from("https://samhh.com"),
+                metadata: String::from("title"),
+                tags: String::from(""),
+                desc: String::from("description"),
+                flags: 0,
+            }
+        ]
     }
 
-    fn create_example_unsaved_bookmark() -> UnsavedBookmark {
-        UnsavedBookmark {
-            url: String::from("https://samhh.com"),
-            metadata: String::from("title"),
-            tags: String::from(""),
-            desc: String::from("description"),
-            flags: 0,
-        }
+    fn create_example_unsaved_bookmarks() -> Vec<UnsavedBookmark> {
+        vec![
+            UnsavedBookmark {
+                url: String::from("https://samhh.com"),
+                metadata: String::from("title"),
+                tags: String::from(""),
+                desc: String::from("description"),
+                flags: 0,
+            }
+        ]
     }
 
     #[test]
@@ -345,12 +349,12 @@ mod tests {
             server.router(json!({
                 "method": "POST",
                 "data": {
-                    "bookmark": create_example_unsaved_bookmark(),
+                    "bookmarks": create_example_unsaved_bookmarks(),
                 },
             })),
             json!({
                 "success": true,
-                "id": shared_mock_update_id(),
+                "ids": shared_mock_update_ids(),
             }),
         );
     }
@@ -368,7 +372,7 @@ mod tests {
             server.router(json!({
                 "method": "PUT",
                 "data": {
-                    "bookmark": create_example_saved_bookmark(),
+                    "bookmarks": create_example_saved_bookmarks(),
                 },
             })),
             json!({ "success": true }),
@@ -405,6 +409,16 @@ mod tests {
                 "method": "DELETE",
                 "data": {
                     "bookmark_id": 99,
+                },
+            })),
+            server.fail_bad_payload(),
+        );
+
+        assert_eq!(
+            server.router(json!({
+                "method": "DELETE",
+                "data": {
+                    "bookmark_ids": vec![99],
                 },
             })),
             json!({ "success": true }),
