@@ -49,7 +49,7 @@ pub fn read_input<R: Read>(mut input: R) -> Result<JSON, NativeMessagingError> {
 /// Chrome's documentation on native messaging.
 /// (https://developer.chrome.com/extensions/nativeMessaging#native-messaging-host-protocol)
 pub fn write_output<W: Write>(mut output: W, val: &JSON) -> Result<W, NativeMessagingError> {
-    let msg = serde_json::to_string(val).map_err(|_| NativeMessagingError::UnknownFailure)?;
+    let msg = serde_json::to_vec(val).map_err(|_| NativeMessagingError::UnknownFailure)?;
     let len = msg.len();
 
     // Web browsers won't accept a message larger than 1MB
@@ -61,7 +61,7 @@ pub fn write_output<W: Write>(mut output: W, val: &JSON) -> Result<W, NativeMess
         .write_u32::<NativeEndian>(len as u32)
         .map_err(|_| NativeMessagingError::UnknownFailure)?;
     output
-        .write_all(msg.as_bytes())
+        .write_all(msg.as_slice())
         .map_err(|_| NativeMessagingError::UnknownFailure)?;
     output
         .flush()
