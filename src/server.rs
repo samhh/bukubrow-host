@@ -1,6 +1,6 @@
 use crate::buku::database::BukuDatabase;
 use crate::buku::types::{BookmarkId, SavedBookmark, UnsavedBookmark};
-use crate::native_messaging::{read_input, write_output, NativeMessagingError};
+use crate::native_messaging::{read_input, write_output, NativeMessagingError, ONE_MEGABYTE_BYTES};
 use clap::crate_version;
 use std::io;
 
@@ -9,6 +9,33 @@ use std::io;
 pub enum InitError {
     FailedToLocateBukuDatabase,
     FailedToAccessBukuDatabase,
+}
+
+#[derive(Debug, PartialEq)]
+enum BookmarksSplitError {
+    BookmarkLargerThanMaxPayloadSize,
+    Unknown,
+}
+
+enum BookmarksSplitOffset {
+    Offset(usize),
+    None,
+}
+
+impl BookmarksSplitOffset {
+    fn unwrap_or(&self, v: usize) -> usize {
+        match self {
+            BookmarksSplitOffset::Offset(offset) => *offset,
+            BookmarksSplitOffset::None => v,
+        }
+    }
+}
+
+#[allow(dead_code)]
+#[derive(PartialEq)]
+enum BookmarksSplitPayloadSize {
+    Limited(usize),
+    Unlimited,
 }
 
 pub fn map_init_err_friendly_msg(err: &InitError) -> &'static str {
@@ -40,6 +67,13 @@ struct RequestMethod {
 struct RequestData<T> {
     data: T,
 }
+
+#[derive(Deserialize)]
+struct RequestDataGet {
+    offset: Option<usize>,
+}
+
+type GetRequest = RequestData<Option<RequestDataGet>>;
 
 #[derive(Deserialize)]
 struct RequestDataPost {
@@ -76,8 +110,7 @@ impl<T: BukuDatabase> Server<T> {
         loop {
             match read_input(io::stdin()) {
                 Ok(payload) => {
-                    let res = self.router(payload);
-                    write_output(io::stdout(), &res)?;
+                    write_output(io::stdout(), &self.router(payload))?;
                 }
                 Err(err) => match err {
                     NativeMessagingError::NoMoreInput => break Err(err),
@@ -102,11 +135,69 @@ impl<T: BukuDatabase> Server<T> {
         }
     }
 
+    fn split_bookmarks_subset(
+        &self,
+        all_bms: &Vec<SavedBookmark>,
+        bms_offset: BookmarksSplitOffset,
+        max_page_size_bytes: BookmarksSplitPayloadSize,
+    ) -> Result<JSON, BookmarksSplitError> {
+        let gen_res = |bms: &Vec<SavedBookmark>, are_more: bool| {
+            json!({
+                "success": true,
+                "bookmarks": &bms,
+                "moreAvailable": are_more,
+            })
+        };
+
+        if all_bms.is_empty() {
+            return Ok(gen_res(&all_bms, false));
+        }
+
+        let offset = bms_offset.unwrap_or(0);
+        let bms = &all_bms[offset..];
+
+        match max_page_size_bytes {
+            BookmarksSplitPayloadSize::Unlimited => Ok(gen_res(&bms.to_vec(), false)),
+            BookmarksSplitPayloadSize::Limited(max_size) => {
+                let overhead = serde_json::to_vec(&gen_res(&vec![], false))
+                    .map_err(|_| BookmarksSplitError::Unknown)?
+                    .len();
+                let mut size_so_far = overhead;
+
+                for (i, bm) in bms.iter().enumerate() {
+                    let bm_size = serde_json::to_vec(&bm)
+                        .map_err(|_| BookmarksSplitError::Unknown)?
+                        .len();
+
+                    let new_size_so_far = size_so_far + bm_size + std::cmp::min(i, 1); // Comma is 1 byte
+                    if new_size_so_far >= max_size {
+                        if i == 0 {
+                            return Err(BookmarksSplitError::BookmarkLargerThanMaxPayloadSize);
+                        }
+
+                        return Ok(gen_res(&all_bms[offset..offset + i].to_vec(), true));
+                    }
+
+                    let is_last_loop = i == bms.len() - 1;
+                    if is_last_loop {
+                        return Ok(gen_res(&bms.to_vec(), false));
+                    }
+
+                    size_so_far = new_size_so_far;
+                }
+
+                Err(BookmarksSplitError::Unknown)
+            }
+        }
+    }
+
     // Route requests per the method
     pub fn router(&self, payload: JSON) -> JSON {
         match &self.db {
             Ok(db) => match self.method_deserializer(payload.clone()) {
-                Method::Get => self.get(&db),
+                Method::Get => serde_json::from_value::<GetRequest>(payload)
+                    .map(|req| self.get(&db, &req.data.and_then(|d| d.offset)))
+                    .unwrap_or_else(|_| self.fail_bad_payload()),
                 Method::Options => self.options(),
                 Method::Post => serde_json::from_value::<PostRequest>(payload)
                     .map(|req| self.post(&db, &req.data.bookmarks))
@@ -124,14 +215,21 @@ impl<T: BukuDatabase> Server<T> {
         }
     }
 
-    fn get(&self, db: &T) -> JSON {
+    fn get(&self, db: &T, offset_opt: &Option<usize>) -> JSON {
         let bookmarks = db.get_all_bookmarks();
+        let offset = offset_opt.map_or_else(
+            || BookmarksSplitOffset::None,
+            |o| BookmarksSplitOffset::Offset(o),
+        );
 
         match bookmarks {
-            Ok(bm) => json!({
-                "success": true,
-                "bookmarks": bm,
-            }),
+            Ok(bms) => self
+                .split_bookmarks_subset(
+                    &bms,
+                    offset,
+                    BookmarksSplitPayloadSize::Limited(*ONE_MEGABYTE_BYTES),
+                )
+                .unwrap_or_else(|_| self.fail_generic()),
             Err(_) => self.fail_generic(),
         }
     }
@@ -206,6 +304,23 @@ mod tests {
     use super::*;
     use crate::buku::database::{BukuDatabase, DbError, SqliteDatabase};
 
+    fn create_bms(range: impl ExactSizeIterator<Item = u16>) -> Vec<SavedBookmark> {
+        let mut bms = Vec::with_capacity(range.len());
+
+        for i in range {
+            bms.push(SavedBookmark {
+                id: i as u32,
+                metadata: String::from(""),
+                desc: String::from(""),
+                url: String::from(""),
+                tags: String::from(""),
+                flags: 0,
+            });
+        }
+
+        bms
+    }
+
     fn shared_mock_update_ids() -> Vec<usize> {
         vec![1, 2, 3, 4]
     }
@@ -248,28 +363,24 @@ mod tests {
     }
 
     fn create_example_saved_bookmarks() -> Vec<SavedBookmark> {
-        vec![
-            SavedBookmark {
-                id: 0,
-                url: String::from("https://samhh.com"),
-                metadata: String::from("title"),
-                tags: String::from(""),
-                desc: String::from("description"),
-                flags: 0,
-            }
-        ]
+        vec![SavedBookmark {
+            id: 0,
+            url: String::from("https://samhh.com"),
+            metadata: String::from("title"),
+            tags: String::from(""),
+            desc: String::from("description"),
+            flags: 0,
+        }]
     }
 
     fn create_example_unsaved_bookmarks() -> Vec<UnsavedBookmark> {
-        vec![
-            UnsavedBookmark {
-                url: String::from("https://samhh.com"),
-                metadata: String::from("title"),
-                tags: String::from(""),
-                desc: String::from("description"),
-                flags: 0,
-            }
-        ]
+        vec![UnsavedBookmark {
+            url: String::from("https://samhh.com"),
+            metadata: String::from("title"),
+            tags: String::from(""),
+            desc: String::from("description"),
+            flags: 0,
+        }]
     }
 
     #[test]
@@ -291,6 +402,192 @@ mod tests {
         assert_eq!(
             server.method_deserializer(json!({ "other": "property" })),
             Method::NoMethod
+        );
+    }
+
+    #[test]
+    fn test_split_bookmarks_subset() {
+        let server = create_mocked_server();
+        let bm_bytes_length = serde_json::to_vec(&create_bms(0..1).pop().unwrap())
+            .unwrap()
+            .to_vec()
+            .len();
+        let overhead_bytes_length = serde_json::to_vec(
+            &server
+                .split_bookmarks_subset(
+                    &create_bms(0..1),
+                    BookmarksSplitOffset::None,
+                    BookmarksSplitPayloadSize::Limited(999999),
+                )
+                .unwrap(),
+        )
+        .unwrap()
+        .len();
+
+        // No limit or offset
+        assert_eq!(
+            server
+                .split_bookmarks_subset(
+                    &create_bms(0..2),
+                    BookmarksSplitOffset::None,
+                    BookmarksSplitPayloadSize::Unlimited
+                )
+                .unwrap(),
+            json!({
+                "success": true,
+                "moreAvailable": false,
+                "bookmarks": create_bms(0..2),
+            }),
+        );
+
+        // No limit with offset
+        assert_eq!(
+            server
+                .split_bookmarks_subset(
+                    &create_bms(0..2),
+                    BookmarksSplitOffset::Offset(1),
+                    BookmarksSplitPayloadSize::Unlimited
+                )
+                .unwrap(),
+            json!({
+                "success": true,
+                "moreAvailable": false,
+                "bookmarks": create_bms(1..2),
+            }),
+        );
+
+        // No bookmarks available
+        assert_eq!(
+            server
+                .split_bookmarks_subset(
+                    &Vec::new(),
+                    BookmarksSplitOffset::None,
+                    BookmarksSplitPayloadSize::Limited(overhead_bytes_length)
+                )
+                .unwrap(),
+            json!({
+                "success": true,
+                "moreAvailable": false,
+                "bookmarks": create_bms(0..0),
+            }),
+        );
+
+        // Insufficient space for both bookmark and overhead
+        assert_eq!(
+            server
+                .split_bookmarks_subset(
+                    &create_bms(0..1),
+                    BookmarksSplitOffset::None,
+                    BookmarksSplitPayloadSize::Limited(overhead_bytes_length)
+                )
+                .unwrap_err(),
+            BookmarksSplitError::BookmarkLargerThanMaxPayloadSize,
+        );
+
+        // One bookmark, fitting
+        assert_eq!(
+            server
+                .split_bookmarks_subset(
+                    &create_bms(0..1),
+                    BookmarksSplitOffset::None,
+                    BookmarksSplitPayloadSize::Limited(bm_bytes_length + overhead_bytes_length)
+                )
+                .unwrap(),
+            json!({
+                "success": true,
+                "moreAvailable": false,
+                "bookmarks": create_bms(0..1),
+            }),
+        );
+
+        // Two bookmarks, both fitting
+        assert_eq!(
+            server
+                .split_bookmarks_subset(
+                    &create_bms(0..2),
+                    BookmarksSplitOffset::None,
+                    BookmarksSplitPayloadSize::Limited(
+                        (bm_bytes_length * 2) + overhead_bytes_length
+                    )
+                )
+                .unwrap(),
+            json!({
+                "success": true,
+                "moreAvailable": false,
+                "bookmarks": create_bms(0..2),
+            }),
+        );
+
+        // Three bookmarks, two fitting with one more available
+        assert_eq!(
+            server
+                .split_bookmarks_subset(
+                    &create_bms(0..3),
+                    BookmarksSplitOffset::None,
+                    BookmarksSplitPayloadSize::Limited(
+                        (bm_bytes_length * 2) + overhead_bytes_length
+                    )
+                )
+                .unwrap(),
+            json!({
+                "success": true,
+                "moreAvailable": true,
+                "bookmarks": create_bms(0..2),
+            }),
+        );
+
+        // Three bookmarks, two fitting, one offset so two remaining both fit
+        assert_eq!(
+            server
+                .split_bookmarks_subset(
+                    &create_bms(0..3),
+                    BookmarksSplitOffset::Offset(1),
+                    BookmarksSplitPayloadSize::Limited(
+                        (bm_bytes_length * 2) + overhead_bytes_length
+                    )
+                )
+                .unwrap(),
+            json!({
+                "success": true,
+                "moreAvailable": false,
+                "bookmarks": create_bms(1..3),
+            }),
+        );
+
+        // Four bookmarks, two fitting, one offset so two fit with one more available
+        assert_eq!(
+            server
+                .split_bookmarks_subset(
+                    &create_bms(0..4),
+                    BookmarksSplitOffset::Offset(1),
+                    BookmarksSplitPayloadSize::Limited(
+                        (bm_bytes_length * 2) + overhead_bytes_length
+                    )
+                )
+                .unwrap(),
+            json!({
+                "success": true,
+                "moreAvailable": true,
+                "bookmarks": create_bms(1..3),
+            }),
+        );
+
+        // Four bookmarks, two fitting, two more available
+        assert_eq!(
+            server
+                .split_bookmarks_subset(
+                    &create_bms(0..4),
+                    BookmarksSplitOffset::None,
+                    BookmarksSplitPayloadSize::Limited(
+                        (bm_bytes_length * 2) + overhead_bytes_length
+                    )
+                )
+                .unwrap(),
+            json!({
+                "success": true,
+                "moreAvailable": true,
+                "bookmarks": create_bms(0..2),
+            }),
         );
     }
 
@@ -322,7 +619,12 @@ mod tests {
 
         assert_eq!(
             server.router(json!({ "method": "GET" })),
-            json!({ "success": true, "bookmarks": Vec::<SavedBookmark>::new() }),
+            json!({ "success": true, "bookmarks": Vec::<SavedBookmark>::new(), "moreAvailable": false }),
+        );
+
+        assert_eq!(
+            server.router(json!({ "method": "GET", "data": { "offset": 1 } })),
+            json!({ "success": true, "bookmarks": Vec::<SavedBookmark>::new(), "moreAvailable": false }),
         );
     }
 
