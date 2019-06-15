@@ -1,6 +1,13 @@
 # Change Log
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [5.0.0] - 2019-06-15
+### Added
+- Support for very large Buku databases that serialise to over 1MB in size.
+
+### Changed
+- Update WebExtension communication API to always operate on vectors of elements.
+
 ## [4.0.1] - 2019-05-07
 ### Changed
 - Fix detection of operating system that failed on some Linux distros.
