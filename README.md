@@ -46,4 +46,5 @@ Further options can be viewed with `bukubrow --help`.
 
 ## Contributing
 
-The host is written in Rust stable (1.34.1 at time of writing). The messages it expects to receive from the WebExtension follow a faux HTTP format; for instance, to get all the bookmarks, you pass it a JSON object of the following format: `{ "method": "GET" }`.
+The host is written in Rust stable. The messages it expects to receive from the WebExtension follow a faux HTTP format; for instance, to get all the bookmarks, you pass it a JSON object of the following format: `{ "method": "GET" }`.
+
