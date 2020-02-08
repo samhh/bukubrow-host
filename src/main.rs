@@ -6,6 +6,7 @@ extern crate serde_derive;
 mod buku;
 mod cli;
 mod hosts;
+mod matching;
 mod native_messaging;
 mod server;
 
@@ -60,32 +61,20 @@ fn main() {
                                 }
                             };
                         }
-                        Argument::ListBookmarks => match db.get_all_bookmarks() {
-                            Ok(bms) => {
-                                for bm in bms {
-                                    println!("{} {}", bm.id, bm.metadata);
-                                }
-                            }
-                            Err(_) => {
-                                exit_with_stdout_err("Failed to fetch bookmarks from database.");
+                        Argument::ListBookmarks => {
+                            for bm in db.get_all_bookmarks() {
+                                println!("{} {}", bm.id, bm.metadata);
                             }
                         },
-                        Argument::OpenBookmarks(ids) => match db.get_bookmarks_by_id(ids) {
-                            Ok(bms) => {
-                                for bm in bms {
-                                    if let Err(_) = webbrowser::open(&bm.url) {
-                                        exit_with_stdout_err(
-                                            "Failed to open bookmark in web browser.",
-                                        );
-                                    }
+                        Argument::OpenBookmarks(ids) => {
+                            for bm in db.get_bookmarks_by_id(ids) {
+                                if let Err(_) = webbrowser::open(&bm.url) {
+                                    exit_with_stdout_err(
+                                        "Failed to open bookmark in web browser.",
+                                    );
                                 }
                             }
-                            Err(_) => {
-                                exit_with_stdout_err(
-                                    "Failed to fetch selected bookmarks from database.",
-                                );
-                            }
-                        },
+                        }
                     }
                 }
             }

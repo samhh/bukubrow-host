@@ -222,16 +222,12 @@ impl<T: BukuDatabase> Server<T> {
             |o| BookmarksSplitOffset::Offset(o),
         );
 
-        match bookmarks {
-            Ok(bms) => self
-                .split_bookmarks_subset(
-                    &bms,
-                    offset,
-                    BookmarksSplitPayloadSize::Limited(*ONE_MEGABYTE_BYTES),
-                )
-                .unwrap_or_else(|_| self.fail_generic()),
-            Err(_) => self.fail_generic(),
-        }
+        self.split_bookmarks_subset(
+            &bookmarks,
+            offset,
+            BookmarksSplitPayloadSize::Limited(*ONE_MEGABYTE_BYTES),
+        )
+            .unwrap_or_else(|_| self.fail_generic())
     }
 
     fn options(&self) -> JSON {
@@ -329,15 +325,19 @@ mod tests {
         struct BukuMock {}
 
         impl BukuDatabase for BukuMock {
-            fn get_all_bookmarks(&self) -> Result<Vec<SavedBookmark>, DbError> {
-                Ok(Vec::new())
+            fn sync(&mut self) -> Result<usize, DbError> {
+                Ok(0)
+            }
+
+            fn get_all_bookmarks(&self) -> &Vec<SavedBookmark> {
+                &Vec::new()
             }
 
             fn get_bookmarks_by_id(
                 &self,
                 _ids: Vec<BookmarkId>,
-            ) -> Result<Vec<SavedBookmark>, DbError> {
-                Ok(Vec::new())
+            ) -> Vec<&SavedBookmark> {
+                Vec::new()
             }
 
             fn add_bookmarks(&self, _bm: &Vec<UnsavedBookmark>) -> Result<Vec<usize>, DbError> {

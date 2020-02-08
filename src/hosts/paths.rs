@@ -49,3 +49,4 @@ pub fn get_host_path(browser: &Browser) -> Result<PathBuf, &'static str> {
 
     Ok(home_dir.join(nm_dir_from_home))
 }
+
