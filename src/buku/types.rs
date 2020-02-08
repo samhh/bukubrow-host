@@ -28,13 +28,18 @@ pub struct BookmarkFilter {
     pub wildcard: Option<Vec<String>>,
 }
 
+// The first item represents the quality of the match, and the second item
+// represents the indices that matched
+pub type MatchDetails = (i64, Vec<usize>);
+pub type MatchDetailsMulti = (i64, Vec<(i32, Vec<usize>)>);
+
 // TODO consider combining this inline with bookmark in transmission? and tags could be improved
 // eh?
 #[derive(Serialize)]
 pub struct BookmarkMatch {
-    name: Option<Vec<usize>>,
-    desc: Option<Vec<usize>>,
-    url: Option<Vec<usize>>,
-    tags: Option<(i16, Vec<usize>)>,
+    pub name: Option<MatchDetails>,
+    pub desc: Option<MatchDetails>,
+    pub url: Option<MatchDetails>,
+    pub tags: Option<MatchDetailsMulti>,
 }
 
