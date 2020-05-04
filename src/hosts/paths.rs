@@ -34,7 +34,9 @@ pub fn get_host_path(browser: &Browser) -> Result<PathBuf, &'static str> {
     let nm_dir_from_home = match (os_type, browser) {
         (OsType::Linux, Browser::Chrome) => Ok(".config/google-chrome/NativeMessagingHosts/"),
         (OsType::Linux, Browser::Chromium) => Ok(".config/chromium/NativeMessagingHosts/"),
-        (OsType::Linux, Browser::Brave) => Ok(".config/BraveSoftware/Brave-Browser/NativeMessagingHosts/"),
+        (OsType::Linux, Browser::Brave) => {
+            Ok(".config/BraveSoftware/Brave-Browser/NativeMessagingHosts/")
+        }
         (OsType::Linux, Browser::Firefox) => Ok(".mozilla/native-messaging-hosts/"),
         (OsType::MacOS, Browser::Chrome) => {
             Ok("Library/Application Support/Google/Chrome/NativeMessagingHosts/")
