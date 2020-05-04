@@ -1,4 +1,4 @@
-// This host is usable for both Chrome and Chromium
+// This host is usable for both Chrome, Chromium and Brave
 #[derive(Serialize)]
 pub struct ChromeHost {
     name: &'static str,

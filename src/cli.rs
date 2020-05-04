@@ -22,6 +22,7 @@ pub fn init() -> Result<Option<Vec<Argument>>, CliError> {
     let chrome_arg = "chrome";
     let chromium_arg = "chromium";
     let firefox_arg = "firefox";
+    let brave_arg = "brave";
     let list_arg = "list";
     let open_arg = "open";
 
@@ -45,6 +46,11 @@ pub fn init() -> Result<Option<Vec<Argument>>, CliError> {
                 .help("Install the native messaging host for Firefox."),
         )
         .arg(
+            Arg::with_name(brave_arg)
+                .long("--install-brave")
+                .help("Install the native messaging host for Brave."),
+        )
+        .arg(
             Arg::with_name(list_arg)
                 .short("-l")
                 .long("--list")
@@ -65,6 +71,7 @@ pub fn init() -> Result<Option<Vec<Argument>>, CliError> {
     let install_chrome = matches.is_present(chrome_arg);
     let install_chromium = matches.is_present(chromium_arg);
     let install_firefox = matches.is_present(firefox_arg);
+    let install_brave = matches.is_present(brave_arg);
     let list_bookmarks = matches.is_present(list_arg);
     let open_bookmark_ids = matches.values_of(open_arg);
 
@@ -78,6 +85,9 @@ pub fn init() -> Result<Option<Vec<Argument>>, CliError> {
     }
     if install_firefox {
         args.push(Argument::InstallBrowserHost(Browser::Firefox));
+    }
+    if install_brave {
+        args.push(Argument::InstallBrowserHost(Browser::Brave));
     }
     if list_bookmarks {
         args.push(Argument::ListBookmarks);
