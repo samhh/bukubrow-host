@@ -1,6 +1,10 @@
 # Change Log
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [5.1.0] - 2020-05-05
+### Added
+- Brave support.
+
 ## [5.0.0] - 2019-06-15
 ### Added
 - Support for very large Buku databases that serialise to over 1MB in size.
