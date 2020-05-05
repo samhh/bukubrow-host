@@ -8,6 +8,7 @@ USAGE:
     bukubrow [FLAGS] [OPTIONS]
 
 FLAGS:
+        --install-brave       Install the native messaging host for Brave.
         --install-chrome      Install the native messaging host for Chrome.
         --install-chromium    Install the native messaging host for Chromium.
         --install-firefox     Install the native messaging host for Firefox.
@@ -38,6 +39,7 @@ If you've downloaded a host zip from the [releases page](https://github.com/samh
 2. Run `make build-linux-x64` (Linux) or `make build-darwin-x64` (macOS). Note that you'll need your target platform installed and configured with Cargo. Your zip file will be located within the `./release/` directory.
 3. Extract the zip file and move the executable to a suitable location, for example `/usr/local/bin/`.
 4. Install the host file for your browser via the executable:
+	- `bukubrow --install-brave`
 	- `bukubrow --install-firefox`
 	- `bukubrow --install-chromium`
 	- `bukubrow --install-chrome`
