@@ -7,7 +7,7 @@ jobs:
 - job: check_formatting
   displayName: Check formatting
   pool:
-      vmImage: ubuntu-16.04
+      vmImage: ubuntu-latest
   steps:
   - script: |
       curl https://sh.rustup.rs -sSf | sh -s -- -y
@@ -18,7 +18,7 @@ jobs:
 - job: check_tests
   displayName: Check tests
   pool:
-      vmImage: ubuntu-16.04
+      vmImage: ubuntu-latest
   steps:
   - script:
       curl https://sh.rustup.rs -sSf | sh -s -- -y
@@ -29,9 +29,9 @@ jobs:
 - template: ./azure-pipelines-template.yml
   parameters:
     name: Linux
-    vmImage: ubuntu-16.04
+    vmImage: ubuntu-latest
 
 - template: ./azure-pipelines-template.yml
   parameters:
     name: macOS
-    vmImage: macOS-10.13
+    vmImage: macOS-latest
