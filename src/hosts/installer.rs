@@ -1,10 +1,11 @@
-use super::paths::{get_host_path, Browser};
+use super::paths::{get_host_path, get_os_type, Browser, OsType};
 use super::targets::chrome::ChromeHost;
 use super::targets::firefox::FirefoxHost;
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
 
+const NM_REGKEY: &'static str = "com.samhh.bukubrow";
 const NM_FILENAME: &'static str = "com.samhh.bukubrow.json";
 
 pub fn install_host(browser: &Browser) -> Result<PathBuf, &'static str> {
@@ -38,5 +39,24 @@ pub fn install_host(browser: &Browser) -> Result<PathBuf, &'static str> {
     }
     .map_err(|_| "Failed to write to browser host file.")?;
 
+    let os_type = get_os_type();
+    match (os_type, browser) {
+        (OsType::Windows, Browser::Firefox) => register_firefox(&full_write_path)?,
+        _ => (),
+    };
+
     Ok(full_write_path)
+}
+
+fn register_firefox(json_path: &PathBuf) -> Result<(), &'static str> {
+    let hkcu = winreg::RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
+    let path = PathBuf::from(r"Software\Mozilla\NativeMessagingHosts").join(NM_REGKEY);
+    let (key, _) = hkcu
+        .create_subkey(&path)
+        .map_err(|_| "Failed to create registry entry.")?;
+
+    key.set_value("", &json_path.to_string_lossy().into_owned())
+        .map_err(|_| "Failed to set registry entry.")?;
+
+    Ok(())
 }

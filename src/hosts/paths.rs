@@ -8,14 +8,15 @@ pub enum Browser {
     Firefox,
 }
 
-enum OsType {
+#[derive(Debug)]
+pub enum OsType {
     Linux,
     MacOS,
     Windows,
     Unknown,
 }
 
-fn get_os_type() -> OsType {
+pub fn get_os_type() -> OsType {
     if cfg!(target_os = "linux") {
         OsType::Linux
     } else if cfg!(target_os = "macos") {
@@ -50,7 +51,8 @@ pub fn get_host_path(browser: &Browser) -> Result<PathBuf, &'static str> {
         (OsType::MacOS, Browser::Firefox) => {
             Ok("Library/Application Support/Mozilla/NativeMessagingHosts/")
         }
-        (OsType::Windows, _) => Err("Windows is not yet supported."),
+        (OsType::Windows, Browser::Firefox) => Ok(r"AppData\Roaming\Mozilla\NativeMessagingHosts\"),
+        (OsType::Windows, _) => Err("Windows is not yet fully supported."),
         _ => Err("Unrecognised operating system."),
     }?;
 

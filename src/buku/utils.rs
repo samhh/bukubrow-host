@@ -1,4 +1,3 @@
-use std::env::var;
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 use std::path::PathBuf;
 
@@ -6,12 +5,9 @@ use std::path::PathBuf;
 pub fn get_db_path() -> Result<PathBuf, IoError> {
     let db_filename = "bookmarks.db";
 
-    let dir = match var("XDG_DATA_HOME") {
-        Ok(xdg_home) => Ok(PathBuf::from(xdg_home + "/buku/")),
-        _ => match var("HOME") {
-            Ok(home) => Ok(PathBuf::from(home + "/.local/share/buku/")),
-            Err(err) => Err(err),
-        },
+    let dir = match dirs::data_dir() {
+        Some(data_dir) => Ok(data_dir.join("buku")),
+        None => Err("Failed to locate data directory."),
     };
 
     let dir_and_file_existing = dir
