@@ -48,6 +48,7 @@ pub fn install_host(browser: &Browser) -> Result<PathBuf, &'static str> {
     Ok(full_write_path)
 }
 
+#[cfg(target_os = "windows")]
 fn register_firefox(json_path: &PathBuf) -> Result<(), &'static str> {
     let hkcu = winreg::RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
     let path = PathBuf::from(r"Software\Mozilla\NativeMessagingHosts").join(NM_REGKEY);
@@ -58,5 +59,10 @@ fn register_firefox(json_path: &PathBuf) -> Result<(), &'static str> {
     key.set_value("", &json_path.to_string_lossy().into_owned())
         .map_err(|_| "Failed to set registry entry.")?;
 
+    Ok(())
+}
+
+#[cfg(not(target_os = "windows"))]
+fn register_firefox(_json_path: &PathBuf) -> Result<(), &'static str> {
     Ok(())
 }
