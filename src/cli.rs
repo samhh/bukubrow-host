@@ -66,7 +66,7 @@ pub fn init() -> Result<Option<Vec<Argument>>, CliError> {
                 .value_name("ID[,ID]"),
         )
         .get_matches_safe()
-        .map_err(|e| CliError::Clap(e))?;
+        .map_err(CliError::Clap)?;
 
     let install_chrome = matches.is_present(chrome_arg);
     let install_chromium = matches.is_present(chromium_arg);
