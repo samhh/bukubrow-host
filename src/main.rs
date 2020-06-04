@@ -73,7 +73,7 @@ fn main() {
                         Argument::OpenBookmarks(ids) => match db.get_bookmarks_by_id(ids) {
                             Ok(bms) => {
                                 for bm in bms {
-                                    if let Err(_) = webbrowser::open(&bm.url) {
+                                    if webbrowser::open(&bm.url).is_err() {
                                         exit_with_stdout_err(
                                             "Failed to open bookmark in web browser.",
                                         );

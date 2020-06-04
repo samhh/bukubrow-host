@@ -15,8 +15,6 @@ pub fn get_db_path() -> Result<PathBuf, IoError> {
         .map(|d| d.join(db_filename))
         .filter(|path| path.is_file());
 
-    dir_and_file_existing.ok_or(IoError::new(
-        IoErrorKind::NotFound,
-        "Failed to find Buku database.",
-    ))
+    dir_and_file_existing
+        .ok_or_else(|| IoError::new(IoErrorKind::NotFound, "Failed to find Buku database."))
 }

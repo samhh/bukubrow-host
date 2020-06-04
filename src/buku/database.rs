@@ -6,9 +6,9 @@ use std::path::PathBuf;
 pub trait BukuDatabase {
     fn get_all_bookmarks(&self) -> Result<Vec<SavedBookmark>, DbError>;
     fn get_bookmarks_by_id(&self, ids: Vec<BookmarkId>) -> Result<Vec<SavedBookmark>, DbError>;
-    fn add_bookmarks(&self, bms: &Vec<UnsavedBookmark>) -> Result<Vec<usize>, DbError>;
-    fn update_bookmarks(&self, bms: &Vec<SavedBookmark>) -> Result<Vec<usize>, DbError>;
-    fn delete_bookmarks(&self, bm_id: &Vec<BookmarkId>) -> Result<Vec<usize>, DbError>;
+    fn add_bookmarks(&self, bms: &[UnsavedBookmark]) -> Result<Vec<usize>, DbError>;
+    fn update_bookmarks(&self, bms: &[SavedBookmark]) -> Result<Vec<usize>, DbError>;
+    fn delete_bookmarks(&self, bm_id: &[BookmarkId]) -> Result<Vec<usize>, DbError>;
 }
 
 pub struct SqliteDatabase {
@@ -69,7 +69,7 @@ impl BukuDatabase for SqliteDatabase {
         Ok(bookmarks)
     }
 
-    fn add_bookmarks(&self, bms: &Vec<UnsavedBookmark>) -> Result<Vec<usize>, DbError> {
+    fn add_bookmarks(&self, bms: &[UnsavedBookmark]) -> Result<Vec<usize>, DbError> {
         bms
             .iter()
             .map(|bm| {
@@ -82,14 +82,14 @@ impl BukuDatabase for SqliteDatabase {
                         &bm.desc,
                         &bm.tags,
                         &bm.url,
-                        &bm.flags as &ToSql,
+                        &bm.flags as &dyn ToSql,
                     ],
                 )
             })
             .collect()
     }
 
-    fn update_bookmarks(&self, bms: &Vec<SavedBookmark>) -> Result<Vec<usize>, DbError> {
+    fn update_bookmarks(&self, bms: &[SavedBookmark]) -> Result<Vec<usize>, DbError> {
         bms
             .iter()
             .map(|bm| {
@@ -98,7 +98,7 @@ impl BukuDatabase for SqliteDatabase {
                     query,
                     &[
                         &bm.id,
-                        &bm.metadata as &ToSql,
+                        &bm.metadata as &dyn ToSql,
                         &bm.desc,
                         &bm.tags,
                         &bm.url,
@@ -109,7 +109,7 @@ impl BukuDatabase for SqliteDatabase {
             .collect()
     }
 
-    fn delete_bookmarks(&self, bm_ids: &Vec<BookmarkId>) -> Result<Vec<usize>, DbError> {
+    fn delete_bookmarks(&self, bm_ids: &[BookmarkId]) -> Result<Vec<usize>, DbError> {
         bm_ids
             .iter()
             .map(|bm_id| {

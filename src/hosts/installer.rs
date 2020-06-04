@@ -5,8 +5,8 @@ use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
 
-const NM_REGKEY: &'static str = "com.samhh.bukubrow";
-const NM_FILENAME: &'static str = "com.samhh.bukubrow.json";
+const NM_REGKEY: &str = "com.samhh.bukubrow";
+const NM_FILENAME: &str = "com.samhh.bukubrow.json";
 
 pub fn install_host(browser: &Browser) -> Result<PathBuf, &'static str> {
     // Create native messaging path if it doesn't already exist
@@ -20,7 +20,7 @@ pub fn install_host(browser: &Browser) -> Result<PathBuf, &'static str> {
         .and_then(|path| path.into_os_string().into_string().map_err(|_| exe_err_str))?;
 
     // Create JSON file
-    let full_write_path = PathBuf::from(host_path).join(NM_FILENAME);
+    let full_write_path = host_path.join(NM_FILENAME);
     let mut file =
         fs::File::create(&full_write_path).map_err(|_| "Failed to create browser host file.")?;
 

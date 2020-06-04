@@ -6,7 +6,7 @@ type JSON = serde_json::Value;
 
 /// Number of bytes in one megabyte. Stored as a usize as that's the type it
 /// will be compared against later.
-pub const ONE_MEGABYTE_BYTES: &'static usize = &1_048_576;
+pub const ONE_MEGABYTE_BYTES: &usize = &1_048_576;
 
 #[derive(Debug, PartialEq)]
 pub enum NativeMessagingError {

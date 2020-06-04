@@ -54,8 +54,8 @@ enum Method {
     Post,
     Put,
     Delete,
-    UnknownMethod,
-    NoMethod,
+    Unknown,
+    None,
 }
 
 #[derive(Deserialize)]
@@ -112,10 +112,11 @@ impl<T: BukuDatabase> Server<T> {
                 Ok(payload) => {
                     write_output(io::stdout(), &self.router(payload))?;
                 }
-                Err(err) => match err {
-                    NativeMessagingError::NoMoreInput => break Err(err),
-                    _ => {}
-                },
+                Err(err) => {
+                    if let NativeMessagingError::NoMoreInput = err {
+                        break Err(err);
+                    }
+                }
             }
         }
     }
@@ -128,20 +129,20 @@ impl<T: BukuDatabase> Server<T> {
                 "POST" => Method::Post,
                 "PUT" => Method::Put,
                 "DELETE" => Method::Delete,
-                _ => Method::UnknownMethod,
+                _ => Method::Unknown,
             }
         } else {
-            Method::NoMethod
+            Method::None
         }
     }
 
     fn split_bookmarks_subset(
         &self,
-        all_bms: &Vec<SavedBookmark>,
+        all_bms: &[SavedBookmark],
         bms_offset: BookmarksSplitOffset,
         max_page_size_bytes: BookmarksSplitPayloadSize,
     ) -> Result<JSON, BookmarksSplitError> {
-        let gen_res = |bms: &Vec<SavedBookmark>, are_more: bool| {
+        let gen_res = |bms: &[SavedBookmark], are_more: bool| {
             json!({
                 "success": true,
                 "bookmarks": &bms,
@@ -159,7 +160,7 @@ impl<T: BukuDatabase> Server<T> {
         match max_page_size_bytes {
             BookmarksSplitPayloadSize::Unlimited => Ok(gen_res(&bms.to_vec(), false)),
             BookmarksSplitPayloadSize::Limited(max_size) => {
-                let overhead = serde_json::to_vec(&gen_res(&vec![], false))
+                let overhead = serde_json::to_vec(&gen_res(&[], false))
                     .map_err(|_| BookmarksSplitError::Unknown)?
                     .len();
                 let mut size_so_far = overhead;
@@ -208,8 +209,8 @@ impl<T: BukuDatabase> Server<T> {
                 Method::Delete => serde_json::from_value::<DeleteRequest>(payload)
                     .map(|req| self.delete(&db, &req.data.bookmark_ids))
                     .unwrap_or_else(|_| self.fail_bad_payload()),
-                Method::UnknownMethod => self.fail_unknown_method(),
-                Method::NoMethod => self.fail_no_method(),
+                Method::Unknown => self.fail_unknown_method(),
+                Method::None => self.fail_no_method(),
             },
             Err(err) => self.fail_init_error(err),
         }
@@ -217,10 +218,8 @@ impl<T: BukuDatabase> Server<T> {
 
     fn get(&self, db: &T, offset_opt: &Option<usize>) -> JSON {
         let bookmarks = db.get_all_bookmarks();
-        let offset = offset_opt.map_or_else(
-            || BookmarksSplitOffset::None,
-            |o| BookmarksSplitOffset::Offset(o),
-        );
+        let offset =
+            offset_opt.map_or_else(|| BookmarksSplitOffset::None, BookmarksSplitOffset::Offset);
 
         match bookmarks {
             Ok(bms) => self
@@ -241,7 +240,7 @@ impl<T: BukuDatabase> Server<T> {
         })
     }
 
-    fn post(&self, db: &T, bms: &Vec<UnsavedBookmark>) -> JSON {
+    fn post(&self, db: &T, bms: &[UnsavedBookmark]) -> JSON {
         let added = db.add_bookmarks(&bms);
 
         if let Ok(ids) = added {
@@ -254,13 +253,13 @@ impl<T: BukuDatabase> Server<T> {
         }
     }
 
-    fn put(&self, db: &T, bms: &Vec<SavedBookmark>) -> JSON {
+    fn put(&self, db: &T, bms: &[SavedBookmark]) -> JSON {
         let update = db.update_bookmarks(&bms);
 
         json!({ "success": update.is_ok() })
     }
 
-    fn delete(&self, db: &T, bm_ids: &Vec<BookmarkId>) -> JSON {
+    fn delete(&self, db: &T, bm_ids: &[BookmarkId]) -> JSON {
         let deletion = db.delete_bookmarks(&bm_ids);
 
         json!({ "success": deletion.is_ok() })
@@ -340,15 +339,15 @@ mod tests {
                 Ok(Vec::new())
             }
 
-            fn add_bookmarks(&self, _bm: &Vec<UnsavedBookmark>) -> Result<Vec<usize>, DbError> {
+            fn add_bookmarks(&self, _bm: &[UnsavedBookmark]) -> Result<Vec<usize>, DbError> {
                 Ok(shared_mock_update_ids())
             }
 
-            fn update_bookmarks(&self, _bm: &Vec<SavedBookmark>) -> Result<Vec<usize>, DbError> {
+            fn update_bookmarks(&self, _bm: &[SavedBookmark]) -> Result<Vec<usize>, DbError> {
                 Ok(shared_mock_update_ids())
             }
 
-            fn delete_bookmarks(&self, _bm_ids: &Vec<BookmarkId>) -> Result<Vec<usize>, DbError> {
+            fn delete_bookmarks(&self, _bm_ids: &[BookmarkId]) -> Result<Vec<usize>, DbError> {
                 Ok(shared_mock_update_ids())
             }
         }
@@ -394,14 +393,14 @@ mod tests {
 
         assert_eq!(
             server.method_deserializer(json!({ "method": "get" })),
-            Method::UnknownMethod
+            Method::Unknown
         );
 
-        assert_eq!(server.method_deserializer(json!({})), Method::NoMethod);
+        assert_eq!(server.method_deserializer(json!({})), Method::None);
 
         assert_eq!(
             server.method_deserializer(json!({ "other": "property" })),
-            Method::NoMethod
+            Method::None
         );
     }
 
@@ -417,7 +416,7 @@ mod tests {
                 .split_bookmarks_subset(
                     &create_bms(0..1),
                     BookmarksSplitOffset::None,
-                    BookmarksSplitPayloadSize::Limited(999999),
+                    BookmarksSplitPayloadSize::Limited(999_999),
                 )
                 .unwrap(),
         )
