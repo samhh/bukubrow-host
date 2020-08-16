@@ -1,20 +1,25 @@
+use crate::hosts::paths::{get_os_type, OsType};
+use std::env::{current_dir, var};
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 use std::path::PathBuf;
 
-/// Determine path to database from environment variables.
-pub fn get_db_path() -> Result<PathBuf, IoError> {
-    let db_filename = "bookmarks.db";
+fn var_path(env_var: &str) -> Option<PathBuf> {
+    var(env_var).map(PathBuf::from).ok()
+}
 
-    let dir = match dirs::data_dir() {
-        Some(data_dir) => Ok(data_dir.join("buku")),
-        None => Err("Failed to locate data directory."),
+/// Determine path to database from environment variables.
+// Nota bene that this must exactly match the logic of Buku's internal
+// `get_default_dbdir` function.
+pub fn get_db_path() -> Result<PathBuf, IoError> {
+    let dir = match get_os_type() {
+        OsType::Windows => var_path("APPDATA"),
+        _ => var_path("XDG_DATA_HOME")
+            .or_else(|| var_path("HOME"))
+            .map(|path| path.join(".local/share"))
+            .or_else(|| current_dir().ok()),
     };
 
-    let dir_and_file_existing = dir
-        .ok()
-        .map(|d| d.join(db_filename))
-        .filter(|path| path.is_file());
-
-    dir_and_file_existing
+    dir.map(|data_path| data_path.join("buku/bookmarks.db"))
+        .filter(|full_path| full_path.is_file())
         .ok_or_else(|| IoError::new(IoErrorKind::NotFound, "Failed to find Buku database."))
 }
