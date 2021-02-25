@@ -14,8 +14,7 @@ pub fn get_db_path() -> Result<PathBuf, IoError> {
     let dir = match get_os_type() {
         OsType::Windows => var_path("APPDATA"),
         _ => var_path("XDG_DATA_HOME")
-            .or_else(|| var_path("HOME"))
-            .map(|path| path.join(".local/share"))
+            .or_else(|| var_path("HOME").map(|path| path.join(".local/share")))
             .or_else(|| current_dir().ok()),
     };
 
