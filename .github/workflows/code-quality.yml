@@ -12,6 +12,8 @@ jobs:
                   ~/.cargo/git
                   target
                 key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            - name: Check
+              run: cargo check
             - name: Test
               run: cargo test
             - name: Lint
