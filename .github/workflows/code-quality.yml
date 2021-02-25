@@ -9,8 +9,6 @@ jobs:
               run: cargo test
             - name: Lint
               # See: https://github.com/rust-lang/rust-clippy/issues/1209
-              run: |
-                rustup component add clippy
-                RUSTFLAGS="-D warnings" cargo clippy --all-targets
+              run: RUSTFLAGS="-D warnings" cargo clippy --all-targets
             - name: Check formatting
               run: cargo fmt -- --check
