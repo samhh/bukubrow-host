@@ -5,7 +5,9 @@ use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
 
+#[cfg(target_os = "windows")]
 const NM_REGKEY: &str = "com.samhh.bukubrow";
+
 const NM_FILENAME: &str = "com.samhh.bukubrow.json";
 
 pub fn install_host(browser: &Browser) -> Result<PathBuf, &'static str> {
