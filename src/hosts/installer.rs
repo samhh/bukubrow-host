@@ -1,6 +1,7 @@
-use super::paths::{get_host_path, get_os_type, Browser, OsType};
+use super::paths::{get_host_path, Browser};
 use super::targets::chrome::ChromeHost;
 use super::targets::firefox::FirefoxHost;
+use platforms::target::{OS, TARGET_OS};
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
@@ -10,7 +11,7 @@ const NM_REGKEY: &str = "com.samhh.bukubrow";
 
 const NM_FILENAME: &str = "com.samhh.bukubrow.json";
 
-pub fn install_host(browser: &Browser) -> Result<PathBuf, &'static str> {
+pub fn install_host(browser: &Browser) -> Result<PathBuf, String> {
     // Create native messaging path if it doesn't already exist
     let host_path = get_host_path(&browser)?;
     fs::create_dir_all(&host_path).map_err(|_| "Failed to create native messaging directory.")?;
@@ -41,9 +42,8 @@ pub fn install_host(browser: &Browser) -> Result<PathBuf, &'static str> {
     }
     .map_err(|_| "Failed to write to browser host file.")?;
 
-    let os_type = get_os_type();
-    match (os_type, browser) {
-        (OsType::Windows, Browser::Firefox) => register_firefox(&full_write_path)?,
+    match (TARGET_OS, browser) {
+        (OS::Windows, Browser::Firefox) => register_firefox(&full_write_path)?,
         _ => (),
     };
 
