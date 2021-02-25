@@ -1,0 +1,16 @@
+name: Code Quality
+on: [push, pull_request]
+jobs:
+    code-quality:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - name: Test
+              run: cargo test
+            - name: Lint
+              # See: https://github.com/rust-lang/rust-clippy/issues/1209
+              run: |
+                rustup component add clippy
+                RUSTFLAGS="-D warnings" cargo clippy --all-targets
+            - name: Check formatting
+              run: cargo fmt -- --check
