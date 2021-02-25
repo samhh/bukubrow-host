@@ -1,7 +1,6 @@
 use super::paths::{get_host_path, Browser};
 use super::targets::chrome::ChromeHost;
 use super::targets::firefox::FirefoxHost;
-use platforms::target::{OS, TARGET_OS};
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
@@ -42,16 +41,16 @@ pub fn install_host(browser: &Browser) -> Result<PathBuf, String> {
     }
     .map_err(|_| "Failed to write to browser host file.")?;
 
-    match (TARGET_OS, browser) {
-        (OS::Windows, Browser::Firefox) => register_firefox(&full_write_path)?,
-        _ => (),
-    };
+    #[cfg(target_os = "windows")]
+    if browser == Browser::Firefox {
+        register_win_regkey(&full_write_path)?
+    }
 
     Ok(full_write_path)
 }
 
 #[cfg(target_os = "windows")]
-fn register_firefox(json_path: &PathBuf) -> Result<(), &'static str> {
+fn register_win_regkey(json_path: &PathBuf) -> Result<(), &'static str> {
     let hkcu = winreg::RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
     let path = PathBuf::from(r"Software\Mozilla\NativeMessagingHosts").join(NM_REGKEY);
     let (key, _) = hkcu
@@ -61,10 +60,5 @@ fn register_firefox(json_path: &PathBuf) -> Result<(), &'static str> {
     key.set_value("", &json_path.to_string_lossy().into_owned())
         .map_err(|_| "Failed to set registry entry.")?;
 
-    Ok(())
-}
-
-#[cfg(not(target_os = "windows"))]
-fn register_firefox(_json_path: &PathBuf) -> Result<(), &'static str> {
     Ok(())
 }

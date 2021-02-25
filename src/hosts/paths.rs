@@ -20,9 +20,13 @@ pub fn get_host_path(browser: &Browser) -> Result<PathBuf, String> {
             Browser::Firefox => Ok(".mozilla/native-messaging-hosts/"),
         },
         OS::MacOS => match browser {
-            Browser::Chrome => Ok("Library/Application Support/Google/Chrome/NativeMessagingHosts/"),
+            Browser::Chrome => {
+                Ok("Library/Application Support/Google/Chrome/NativeMessagingHosts/")
+            }
             Browser::Chromium => Ok("Library/Application Support/Chromium/NativeMessagingHosts/"),
-            Browser::Brave => Ok("Library/Application Support/BraveSoftware/Brave-Browser/NativeMessagingHosts/"),
+            Browser::Brave => {
+                Ok("Library/Application Support/BraveSoftware/Brave-Browser/NativeMessagingHosts/")
+            }
             Browser::Firefox => Ok("Library/Application Support/Mozilla/NativeMessagingHosts/"),
         },
         OS::Windows => match browser {
