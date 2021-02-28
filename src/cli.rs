@@ -35,39 +35,39 @@ pub fn init() -> Result<Option<Vec<Argument>>, CliError> {
         .arg(
             Arg::new(chrome_arg)
                 .long("--install-chrome")
-                .about("Install the native messaging host for Chrome."),
+                .about("Install the native messaging host for Chrome"),
         )
         .arg(
             Arg::new(chromium_arg)
                 .long("--install-chromium")
-                .about("Install the native messaging host for Chromium."),
+                .about("Install the native messaging host for Chromium"),
         )
         .arg(
             Arg::new(firefox_arg)
                 .long("--install-firefox")
-                .about("Install the native messaging host for Firefox."),
+                .about("Install the native messaging host for Firefox"),
         )
         .arg(
             Arg::new(brave_arg)
                 .long("--install-brave")
-                .about("Install the native messaging host for Brave."),
+                .about("Install the native messaging host for Brave"),
         )
         .arg(
             Arg::new(vivaldi_arg)
                 .long("--install-vivaldi")
-                .about("Install the native messaging host for Vivaldi."),
+                .about("Install the native messaging host for Vivaldi"),
         )
         .arg(
             Arg::new(list_arg)
                 .short('l')
                 .long("--list")
-                .about("Print all bookmarks in a list to stdout."),
+                .about("Print all bookmarks in a list to stdout"),
         )
         .arg(
             Arg::new(open_arg)
                 .short('o')
                 .long("--open")
-                .about("Open bookmark(s) in the browser by ID.")
+                .about("Open bookmark(s) in the browser by ID")
                 .takes_value(true)
                 .value_delimiter(",")
                 .value_name("ID[,ID]"),

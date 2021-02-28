@@ -9,16 +9,16 @@ USAGE:
 
 FLAGS:
     -h, --help                Prints help information
-        --install-brave       Install the native messaging host for Brave.
-        --install-chrome      Install the native messaging host for Chrome.
-        --install-chromium    Install the native messaging host for Chromium.
-        --install-firefox     Install the native messaging host for Firefox.
-        --install-vivaldi     Install the native messaging host for Vivaldi.
-    -l, --list                Print all bookmarks in a list to stdout.
+        --install-brave       Install the native messaging host for Brave
+        --install-chrome      Install the native messaging host for Chrome
+        --install-chromium    Install the native messaging host for Chromium
+        --install-firefox     Install the native messaging host for Firefox
+        --install-vivaldi     Install the native messaging host for Vivaldi
+    -l, --list                Print all bookmarks in a list to stdout
     -V, --version             Prints version information
 
 OPTIONS:
-    -o, --open <ID[,ID]>    Open bookmark(s) in the browser by ID.
+    -o, --open <ID[,ID]>    Open bookmark(s) in the browser by ID
 ```
 
 ## Prerequisites
