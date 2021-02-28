@@ -31,41 +31,41 @@ pub fn init() -> Result<Option<Vec<Argument>>, CliError> {
         .author(crate_authors!())
         .about("Bukubrow native messaging host installer")
         .arg(
-            Arg::with_name(chrome_arg)
+            Arg::new(chrome_arg)
                 .long("--install-chrome")
-                .help("Install the native messaging host for Chrome."),
+                .about("Install the native messaging host for Chrome."),
         )
         .arg(
-            Arg::with_name(chromium_arg)
+            Arg::new(chromium_arg)
                 .long("--install-chromium")
-                .help("Install the native messaging host for Chromium."),
+                .about("Install the native messaging host for Chromium."),
         )
         .arg(
-            Arg::with_name(firefox_arg)
+            Arg::new(firefox_arg)
                 .long("--install-firefox")
-                .help("Install the native messaging host for Firefox."),
+                .about("Install the native messaging host for Firefox."),
         )
         .arg(
-            Arg::with_name(brave_arg)
+            Arg::new(brave_arg)
                 .long("--install-brave")
-                .help("Install the native messaging host for Brave."),
+                .about("Install the native messaging host for Brave."),
         )
         .arg(
-            Arg::with_name(list_arg)
-                .short("-l")
+            Arg::new(list_arg)
+                .short('l')
                 .long("--list")
-                .help("Print all bookmarks in a list to stdout."),
+                .about("Print all bookmarks in a list to stdout."),
         )
         .arg(
-            Arg::with_name(open_arg)
-                .short("-o")
+            Arg::new(open_arg)
+                .short('o')
                 .long("--open")
-                .help("Open bookmark(s) in the browser by ID.")
+                .about("Open bookmark(s) in the browser by ID.")
                 .takes_value(true)
                 .value_delimiter(",")
                 .value_name("ID[,ID]"),
         )
-        .get_matches_safe()
+        .try_get_matches()
         .map_err(CliError::Clap)?;
 
     let install_chrome = matches.is_present(chrome_arg);

@@ -28,7 +28,7 @@ fn main() {
     // ignore any unrecognised arguments
     let recognised_args = cli::init().unwrap_or_else(|err| match err {
         CliError::Clap(clap_err) => match clap_err.kind {
-            ErrorKind::HelpDisplayed | ErrorKind::VersionDisplayed => clap_err.exit(),
+            ErrorKind::DisplayHelp | ErrorKind::DisplayVersion => clap_err.exit(),
             _ => None,
         },
         CliError::BookmarkIdsParseFailed => {
