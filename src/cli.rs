@@ -19,10 +19,12 @@ pub enum CliError {
 /// unrecognised flag(s) were passed. This includes help and version flags
 /// which must be handled outside this function.
 pub fn init() -> Result<Option<Vec<Argument>>, CliError> {
-    let chrome_arg = "chrome";
-    let chromium_arg = "chromium";
-    let firefox_arg = "firefox";
-    let brave_arg = "brave";
+    // Nota bene these strings determine the ordering of the help message
+    let chrome_arg = "install-chrome";
+    let chromium_arg = "install-chromium";
+    let firefox_arg = "install-firefox";
+    let brave_arg = "install-brave";
+    let vivaldi_arg = "install-vivaldi";
     let list_arg = "list";
     let open_arg = "open";
 
@@ -51,6 +53,11 @@ pub fn init() -> Result<Option<Vec<Argument>>, CliError> {
                 .about("Install the native messaging host for Brave."),
         )
         .arg(
+            Arg::new(vivaldi_arg)
+                .long("--install-vivaldi")
+                .about("Install the native messaging host for Vivaldi."),
+        )
+        .arg(
             Arg::new(list_arg)
                 .short('l')
                 .long("--list")
@@ -72,10 +79,11 @@ pub fn init() -> Result<Option<Vec<Argument>>, CliError> {
     let install_chromium = matches.is_present(chromium_arg);
     let install_firefox = matches.is_present(firefox_arg);
     let install_brave = matches.is_present(brave_arg);
+    let install_vivaldi = matches.is_present(vivaldi_arg);
     let list_bookmarks = matches.is_present(list_arg);
     let open_bookmark_ids = matches.values_of(open_arg);
 
-    let mut args = Vec::with_capacity(5);
+    let mut args = Vec::with_capacity(7);
 
     if install_chrome {
         args.push(Argument::InstallBrowserHost(Browser::Chrome));
@@ -88,6 +96,9 @@ pub fn init() -> Result<Option<Vec<Argument>>, CliError> {
     }
     if install_brave {
         args.push(Argument::InstallBrowserHost(Browser::Brave));
+    }
+    if install_vivaldi {
+        args.push(Argument::InstallBrowserHost(Browser::Vivaldi));
     }
     if list_bookmarks {
         args.push(Argument::ListBookmarks);

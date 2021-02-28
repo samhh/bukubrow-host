@@ -8,11 +8,12 @@ USAGE:
     bukubrow [FLAGS] [OPTIONS]
 
 FLAGS:
+    -h, --help                Prints help information
         --install-brave       Install the native messaging host for Brave.
         --install-chrome      Install the native messaging host for Chrome.
         --install-chromium    Install the native messaging host for Chromium.
         --install-firefox     Install the native messaging host for Firefox.
-    -h, --help                Prints help information
+        --install-vivaldi     Install the native messaging host for Vivaldi.
     -l, --list                Print all bookmarks in a list to stdout.
     -V, --version             Prints version information
 
