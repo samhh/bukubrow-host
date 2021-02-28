@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [5.2.0] - _Unreleased_
+
+- Added Vivaldi support.
+- Added FreeBSD and OpenBSD support.
+
 ## [5.1.0] - 2020-05-05
 
 - Added Brave support.
