@@ -34,7 +34,7 @@ Installing the host and registering it with your browser is required to allow th
 
 If you've installed the host from the [AUR](https://aur.archlinux.org/packages/bukubrow/), skip to step 4.
 
-If you've downloaded a host zip from the [releases page](https://github.com/samhh/bukubrow-host/releases), skip to step 3.
+If you've downloaded the host from the [releases page](https://github.com/samhh/bukubrow-host/releases), skip to step 3.
 
 1. Clone the repo.
 2. Run `cargo build --release`. Note that you'll need your target platform installed and configured with Cargo. Your executable will be located at `target/release/bukubrow`.
