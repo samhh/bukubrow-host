@@ -37,13 +37,9 @@ If you've installed the host from the [AUR](https://aur.archlinux.org/packages/b
 If you've downloaded a host zip from the [releases page](https://github.com/samhh/bukubrow-host/releases), skip to step 3.
 
 1. Clone the repo.
-2. Run `make build-linux-x64` (Linux) or `make build-darwin-x64` (macOS). Note that you'll need your target platform installed and configured with Cargo. Your zip file will be located within the `./release/` directory.
-3. Extract the zip file and move the executable to a suitable location, for example `/usr/local/bin/`.
-4. Install the host file for your browser via the executable:
-	- `bukubrow --install-brave`
-	- `bukubrow --install-firefox`
-	- `bukubrow --install-chromium`
-	- `bukubrow --install-chrome`
+2. Run `cargo build --release`. Note that you'll need your target platform installed and configured with Cargo. Your executable will be located at `target/release/bukubrow`.
+3. Move the executable to a suitable location, for example `/usr/local/bin/`.
+4. Install the host file for your browser via the executable, for example `bukubrow --install-firefox`.
 
 Further options can be viewed with `bukubrow --help`.
 
