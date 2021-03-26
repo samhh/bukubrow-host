@@ -2,10 +2,11 @@
 
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [5.2.0] - _Unreleased_
+## [5.2.0] - 2021-03-26
 
 - Added Vivaldi support.
 - Added FreeBSD and OpenBSD support.
+- Added limited support for Windows. At present there are no CI builds and, if you can build the project, only Firefox is supported.
 
 ## [5.1.0] - 2020-05-05
 
