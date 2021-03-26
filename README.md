@@ -12,6 +12,8 @@ FLAGS:
         --install-brave       Install the native messaging host for Brave
         --install-chrome      Install the native messaging host for Chrome
         --install-chromium    Install the native messaging host for Chromium
+        --install-edge        Install the native messaging host for Microsoft Edge (Dev channel on
+                              Linux)
         --install-firefox     Install the native messaging host for Firefox
         --install-vivaldi     Install the native messaging host for Vivaldi
     -l, --list                Print all bookmarks in a list to stdout

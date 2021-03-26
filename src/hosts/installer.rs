@@ -28,11 +28,13 @@ pub fn install_host(browser: &Browser) -> Result<PathBuf, String> {
 
     // Write to created file
     match browser {
-        Browser::Chrome | Browser::Chromium | Browser::Brave | Browser::Vivaldi => file.write_all(
-            &serde_json::to_string(&ChromeHost::new(exe_path))
-                .map_err(|_| "Failed to serialise Chrome/Chromium/Brave browser host.")?
-                .as_bytes(),
-        ),
+        Browser::Chrome | Browser::Chromium | Browser::Brave | Browser::Vivaldi | Browser::Edge => {
+            file.write_all(
+                &serde_json::to_string(&ChromeHost::new(exe_path))
+                    .map_err(|_| "Failed to serialise Chrome/Chromium/Brave browser host.")?
+                    .as_bytes(),
+            )
+        }
         Browser::Firefox => file.write_all(
             &serde_json::to_string(&FirefoxHost::new(exe_path))
                 .map_err(|_| "Failed to serialise Firefox browser host.")?

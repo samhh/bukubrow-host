@@ -8,6 +8,7 @@ pub enum Browser {
     Brave,
     Firefox,
     Vivaldi,
+    Edge,
 }
 
 pub fn get_host_path(browser: &Browser) -> Result<PathBuf, String> {
@@ -20,6 +21,7 @@ pub fn get_host_path(browser: &Browser) -> Result<PathBuf, String> {
             Browser::Brave => Ok(".config/BraveSoftware/Brave-Browser/NativeMessagingHosts/"),
             Browser::Firefox => Ok(".mozilla/native-messaging-hosts/"),
             Browser::Vivaldi => Ok(".config/vivaldi/NativeMessagingHosts/"),
+            Browser::Edge => Ok(".config/microsoft-edge-dev/NativeMessagingHosts/"),
         },
         OS::MacOS => match browser {
             Browser::Chrome => {
@@ -31,6 +33,7 @@ pub fn get_host_path(browser: &Browser) -> Result<PathBuf, String> {
             }
             Browser::Firefox => Ok("Library/Application Support/Mozilla/NativeMessagingHosts/"),
             Browser::Vivaldi => Ok("Library/Application Support/Vivaldi/NativeMessagingHosts/"),
+            Browser::Edge => Ok("Library/Microsoft/Edge/NativeMessagingHosts/"),
         },
         OS::Windows => match browser {
             Browser::Firefox => Ok(r"AppData\Roaming\Mozilla\NativeMessagingHosts\"),
