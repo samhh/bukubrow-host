@@ -1,5 +1,5 @@
 use crate::buku::types::BookmarkId;
-use crate::hosts::paths::Browser;
+use crate::manifest::paths::Browser;
 use clap::{crate_authors, crate_name, crate_version, App, Arg, Error as ClapError};
 
 pub enum Argument {

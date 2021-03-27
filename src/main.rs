@@ -5,14 +5,14 @@ extern crate serde_derive;
 
 mod buku;
 mod cli;
-mod hosts;
+mod manifest;
 mod native_messaging;
 mod server;
 
 use crate::buku::database::{BukuDatabase, SqliteDatabase};
 use crate::buku::utils::get_db_path;
 use crate::cli::{exit_with_stdout_err, Argument, CliError};
-use crate::hosts::installer::install_host;
+use crate::manifest::installer::install_host;
 use crate::native_messaging::NativeMessagingError;
 use crate::server::{map_init_err_friendly_msg, InitError, Server};
 use clap::ErrorKind;
