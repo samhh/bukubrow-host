@@ -11,7 +11,7 @@ pub enum Browser {
     Edge,
 }
 
-pub fn get_host_path(browser: &Browser) -> Result<PathBuf, String> {
+pub fn get_manifest_path(browser: &Browser) -> Result<PathBuf, String> {
     let home_dir = dirs::home_dir().ok_or("Failed to determine path to home directory.")?;
 
     let nm_dir_from_home = match TARGET_OS {

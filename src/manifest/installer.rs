@@ -1,6 +1,6 @@
 #[cfg(target_os = "windows")]
 use super::paths::get_regkey_path;
-use super::paths::{get_host_path, Browser};
+use super::paths::{get_manifest_path, Browser};
 use super::targets::chrome::ChromeHost;
 use super::targets::firefox::FirefoxHost;
 use crate::config::NAME;
@@ -8,10 +8,10 @@ use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
 
-pub fn install_host(browser: &Browser) -> Result<PathBuf, String> {
+pub fn install_manifest(browser: &Browser) -> Result<PathBuf, String> {
     // Create native messaging path if it doesn't already exist
-    let host_path = get_host_path(&browser)?;
-    fs::create_dir_all(&host_path).map_err(|_| "Failed to create native messaging directory.")?;
+    let manifest_path = get_manifest_path(&browser)?;
+    fs::create_dir_all(&manifest_path).map_err(|_| "Failed to create native messaging directory.")?;
 
     // Determine path of self/executable
     let exe_path = std::env::current_exe()
@@ -22,19 +22,19 @@ pub fn install_host(browser: &Browser) -> Result<PathBuf, String> {
 
     // Create JSON file
     let filename = NAME.to_owned() + ".json";
-    let full_write_path = host_path.join(filename);
+    let full_write_path = manifest_path.join(filename);
     let mut file =
-        fs::File::create(&full_write_path).map_err(|_| "Failed to create browser host file.")?;
+        fs::File::create(&full_write_path).map_err(|_| "Failed to create manifest file.")?;
 
     // Write manifest to created file
     let manifest = match browser {
         Browser::Firefox => serde_json::to_string(&FirefoxHost::new(exe_path)),
         _ => serde_json::to_string(&ChromeHost::new(exe_path)),
     }
-    .map_err(|_| "Failed to serialise browser host.")?;
+    .map_err(|_| "Failed to serialise manifest.")?;
 
     file.write_all(manifest.as_bytes())
-        .map_err(|_| "Failed to write to browser host file.")?;
+        .map_err(|_| "Failed to write to manifest file.")?;
 
     // Register regkey
     #[cfg(target_os = "windows")]

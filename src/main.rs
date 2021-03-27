@@ -13,7 +13,7 @@ mod server;
 use crate::buku::database::{BukuDatabase, SqliteDatabase};
 use crate::buku::utils::get_db_path;
 use crate::cli::{exit_with_stdout_err, Argument, CliError};
-use crate::manifest::installer::install_host;
+use crate::manifest::installer::install_manifest;
 use crate::native_messaging::NativeMessagingError;
 use crate::server::{map_init_err_friendly_msg, InitError, Server};
 use clap::ErrorKind;
@@ -44,7 +44,7 @@ fn main() {
                 for arg in args {
                     match arg {
                         Argument::InstallBrowserHost(browser) => {
-                            let installed = install_host(&browser);
+                            let installed = install_manifest(&browser);
 
                             match installed {
                                 Ok(path) => {
