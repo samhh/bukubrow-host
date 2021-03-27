@@ -25,61 +25,67 @@ pub fn init() -> Result<Option<Vec<Argument>>, CliError> {
     let firefox_arg = "install-firefox";
     let brave_arg = "install-brave";
     let vivaldi_arg = "install-vivaldi";
+    let edge_arg = "install-edge";
     let list_arg = "list";
     let open_arg = "open";
 
-    let matches = App::new(crate_name!())
-        .version(crate_version!())
-        .author(crate_authors!())
-        .about("Bukubrow native messaging host installer")
-        .arg(
-            Arg::new(chrome_arg)
-                .long("--install-chrome")
-                .about("Install the native messaging host for Chrome"),
-        )
-        .arg(
-            Arg::new(chromium_arg)
-                .long("--install-chromium")
-                .about("Install the native messaging host for Chromium"),
-        )
-        .arg(
-            Arg::new(firefox_arg)
-                .long("--install-firefox")
-                .about("Install the native messaging host for Firefox"),
-        )
-        .arg(
-            Arg::new(brave_arg)
-                .long("--install-brave")
-                .about("Install the native messaging host for Brave"),
-        )
-        .arg(
-            Arg::new(vivaldi_arg)
-                .long("--install-vivaldi")
-                .about("Install the native messaging host for Vivaldi"),
-        )
-        .arg(
-            Arg::new(list_arg)
-                .short('l')
-                .long("--list")
-                .about("Print all bookmarks in a list to stdout"),
-        )
-        .arg(
-            Arg::new(open_arg)
-                .short('o')
-                .long("--open")
-                .about("Open bookmark(s) in the browser by ID")
-                .takes_value(true)
-                .value_delimiter(",")
-                .value_name("ID[,ID]"),
-        )
-        .try_get_matches()
-        .map_err(CliError::Clap)?;
+    let matches =
+        App::new(crate_name!())
+            .version(crate_version!())
+            .author(crate_authors!())
+            .about("Bukubrow native messaging host installer")
+            .arg(
+                Arg::new(chrome_arg)
+                    .long("--install-chrome")
+                    .about("Install the native messaging host for Chrome"),
+            )
+            .arg(
+                Arg::new(chromium_arg)
+                    .long("--install-chromium")
+                    .about("Install the native messaging host for Chromium"),
+            )
+            .arg(
+                Arg::new(firefox_arg)
+                    .long("--install-firefox")
+                    .about("Install the native messaging host for Firefox"),
+            )
+            .arg(
+                Arg::new(brave_arg)
+                    .long("--install-brave")
+                    .about("Install the native messaging host for Brave"),
+            )
+            .arg(
+                Arg::new(vivaldi_arg)
+                    .long("--install-vivaldi")
+                    .about("Install the native messaging host for Vivaldi"),
+            )
+            .arg(Arg::new(edge_arg).long("--install-edge").about(
+                "Install the native messaging host for Microsoft Edge (Dev channel on Linux)",
+            ))
+            .arg(
+                Arg::new(list_arg)
+                    .short('l')
+                    .long("--list")
+                    .about("Print all bookmarks in a list to stdout"),
+            )
+            .arg(
+                Arg::new(open_arg)
+                    .short('o')
+                    .long("--open")
+                    .about("Open bookmark(s) in the browser by ID")
+                    .takes_value(true)
+                    .value_delimiter(",")
+                    .value_name("ID[,ID]"),
+            )
+            .try_get_matches()
+            .map_err(CliError::Clap)?;
 
     let install_chrome = matches.is_present(chrome_arg);
     let install_chromium = matches.is_present(chromium_arg);
     let install_firefox = matches.is_present(firefox_arg);
     let install_brave = matches.is_present(brave_arg);
     let install_vivaldi = matches.is_present(vivaldi_arg);
+    let install_edge = matches.is_present(edge_arg);
     let list_bookmarks = matches.is_present(list_arg);
     let open_bookmark_ids = matches.values_of(open_arg);
 
@@ -99,6 +105,9 @@ pub fn init() -> Result<Option<Vec<Argument>>, CliError> {
     }
     if install_vivaldi {
         args.push(Argument::InstallBrowserHost(Browser::Vivaldi));
+    }
+    if install_edge {
+        args.push(Argument::InstallBrowserHost(Browser::Edge));
     }
     if list_bookmarks {
         args.push(Argument::ListBookmarks);
