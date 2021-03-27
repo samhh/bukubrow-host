@@ -5,6 +5,7 @@ extern crate serde_derive;
 
 mod buku;
 mod cli;
+mod config;
 mod manifest;
 mod native_messaging;
 mod server;

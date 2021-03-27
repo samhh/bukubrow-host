@@ -1,14 +1,12 @@
+#[cfg(target_os = "windows")]
+use super::paths::get_regkey_path;
 use super::paths::{get_host_path, Browser};
 use super::targets::chrome::ChromeHost;
 use super::targets::firefox::FirefoxHost;
+use crate::config::NAME;
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
-
-#[cfg(target_os = "windows")]
-const NM_REGKEY: &str = "com.samhh.bukubrow";
-
-const NM_FILENAME: &str = "com.samhh.bukubrow.json";
 
 pub fn install_host(browser: &Browser) -> Result<PathBuf, String> {
     // Create native messaging path if it doesn't already exist
@@ -16,45 +14,44 @@ pub fn install_host(browser: &Browser) -> Result<PathBuf, String> {
     fs::create_dir_all(&host_path).map_err(|_| "Failed to create native messaging directory.")?;
 
     // Determine path of self/executable
-    let exe_err_str = "Could not determine location of Bukubrow executable.";
     let exe_path = std::env::current_exe()
-        .map_err(|_| exe_err_str)
-        .and_then(|path| path.into_os_string().into_string().map_err(|_| exe_err_str))?;
+        .map_err(|_| "Failed to determine location of executable.")?
+        .into_os_string()
+        .into_string()
+        .map_err(|_| "Failed to serialise location of executable.")?;
 
     // Create JSON file
-    let full_write_path = host_path.join(NM_FILENAME);
+    let filename = NAME.to_owned() + ".json";
+    let full_write_path = host_path.join(filename);
     let mut file =
         fs::File::create(&full_write_path).map_err(|_| "Failed to create browser host file.")?;
 
-    // Write to created file
-    match browser {
-        Browser::Chrome | Browser::Chromium | Browser::Brave | Browser::Vivaldi | Browser::Edge => {
-            file.write_all(
-                &serde_json::to_string(&ChromeHost::new(exe_path))
-                    .map_err(|_| "Failed to serialise Chrome/Chromium/Brave browser host.")?
-                    .as_bytes(),
-            )
-        }
-        Browser::Firefox => file.write_all(
-            &serde_json::to_string(&FirefoxHost::new(exe_path))
-                .map_err(|_| "Failed to serialise Firefox browser host.")?
-                .as_bytes(),
-        ),
+    // Write manifest to created file
+    let manifest = match browser {
+        Browser::Firefox => serde_json::to_string(&FirefoxHost::new(exe_path)),
+        _ => serde_json::to_string(&ChromeHost::new(exe_path)),
     }
-    .map_err(|_| "Failed to write to browser host file.")?;
+    .map_err(|_| "Failed to serialise browser host.")?;
 
+    file.write_all(manifest.as_bytes())
+        .map_err(|_| "Failed to write to browser host file.")?;
+
+    // Register regkey
     #[cfg(target_os = "windows")]
-    if browser == Browser::Firefox {
-        register_win_regkey(&full_write_path)?
-    }
+    register_regkey(&browser, &full_write_path)?;
 
     Ok(full_write_path)
 }
 
 #[cfg(target_os = "windows")]
-fn register_win_regkey(json_path: &PathBuf) -> Result<(), &'static str> {
+const REGKEY: &str = NAME;
+
+#[cfg(target_os = "windows")]
+fn register_regkey(browser: &Browser, json_path: &PathBuf) -> Result<(), &'static str> {
+    let path_prefix = get_regkey_path(&browser).ok_or("Failed to get regkey path.")?;
+    let path = PathBuf::from(path_prefix).join(REGKEY);
+
     let hkcu = winreg::RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
-    let path = PathBuf::from(r"Software\Mozilla\NativeMessagingHosts").join(NM_REGKEY);
     let (key, _) = hkcu
         .create_subkey(&path)
         .map_err(|_| "Failed to create registry entry.")?;

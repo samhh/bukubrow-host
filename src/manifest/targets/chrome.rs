@@ -1,4 +1,7 @@
-// This host is usable for both Chrome, Chromium and Brave
+use crate::config::{DESC, NAME};
+
+/// This manifest shape targets Chrome but is used by a number of other Blink-
+/// and Webkit-based browsers.
 #[derive(Serialize)]
 pub struct ChromeHost {
     name: &'static str,
@@ -11,8 +14,8 @@ pub struct ChromeHost {
 impl ChromeHost {
     pub fn new<T: Into<String>>(path: T) -> Self {
         ChromeHost {
-            name: "com.samhh.bukubrow",
-            description: "Bukubrow host for the Chrome extension",
+            name: NAME,
+            description: DESC,
             path: path.into(),
             r#type: "stdio",
             allowed_origins: ["chrome-extension://ghniladkapjacfajiooekgkfopkjblpn/"],

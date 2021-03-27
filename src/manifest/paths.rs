@@ -44,3 +44,11 @@ pub fn get_host_path(browser: &Browser) -> Result<PathBuf, String> {
 
     Ok(home_dir.join(nm_dir_from_home))
 }
+
+#[cfg(target_os = "windows")]
+pub fn get_regkey_path(browser: &Browser) -> Option<&'static str> {
+    match browser {
+        Browser::Firefox => Some(r"Software\Mozilla\NativeMessagingHosts"),
+        _ => None,
+    }
+}

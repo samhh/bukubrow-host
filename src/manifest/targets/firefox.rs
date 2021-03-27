@@ -1,3 +1,5 @@
+use crate::config::{DESC, NAME};
+
 #[derive(Serialize)]
 pub struct FirefoxHost {
     name: &'static str,
@@ -10,8 +12,8 @@ pub struct FirefoxHost {
 impl FirefoxHost {
     pub fn new<T: Into<String>>(path: T) -> Self {
         FirefoxHost {
-            name: "com.samhh.bukubrow",
-            description: "Bukubrow host for the Firefox extension",
+            name: NAME,
+            description: DESC,
             path: path.into(),
             r#type: "stdio",
             allowed_extensions: ["bukubrow@samhh.com"],
