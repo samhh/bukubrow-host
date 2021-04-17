@@ -2,7 +2,7 @@ use byteorder::{NativeEndian, ReadBytesExt, WriteBytesExt};
 use std::io;
 use std::io::{Read, Write};
 
-type JSON = serde_json::Value;
+type Json = serde_json::Value;
 
 /// Number of bytes in one megabyte. Stored as a usize as that's the type it
 /// will be compared against later.
@@ -22,7 +22,7 @@ pub enum NativeMessagingError {
 ///
 /// 1. A u32 integer specifies how long the following message is.
 /// 2. The message is encoded in JSON.
-pub fn read_input<R: Read>(mut input: R) -> Result<JSON, NativeMessagingError> {
+pub fn read_input<R: Read>(mut input: R) -> Result<Json, NativeMessagingError> {
     match input.read_u32::<NativeEndian>() {
         Ok(len) => {
             // Due to read_exact looking at a vector's length rather than its
@@ -48,7 +48,7 @@ pub fn read_input<R: Read>(mut input: R) -> Result<JSON, NativeMessagingError> {
 /// Outputs JSON data to a writer, where said data is encoded according to
 /// Chrome's documentation on native messaging.
 /// (https://developer.chrome.com/extensions/nativeMessaging#native-messaging-host-protocol)
-pub fn write_output<W: Write>(mut output: W, val: &JSON) -> Result<W, NativeMessagingError> {
+pub fn write_output<W: Write>(mut output: W, val: &Json) -> Result<W, NativeMessagingError> {
     let msg = serde_json::to_vec(val).map_err(|_| NativeMessagingError::UnknownFailure)?;
     let len = msg.len();
 
@@ -76,7 +76,7 @@ mod tests {
 
     /// Returns a matching pair of a JSON value and its native messaging-encoded
     /// representation.
-    fn encoded_pair() -> (JSON, Vec<u8>) {
+    fn encoded_pair() -> (Json, Vec<u8>) {
         let json = json!({ "property": { "subproperty": "value" } });
         let message = vec![
             36, 0, 0, 0, 123, 34, 112, 114, 111, 112, 101, 114, 116, 121, 34, 58, 123, 34, 115,

@@ -1,7 +1,7 @@
 use super::types::{BookmarkId, SavedBookmark, UnsavedBookmark};
 pub use rusqlite::Error as DbError;
 use rusqlite::{types::ToSql, Connection, Row, NO_PARAMS};
-use std::path::PathBuf;
+use std::path::Path;
 
 pub trait BukuDatabase {
     fn get_all_bookmarks(&self) -> Result<Vec<SavedBookmark>, DbError>;
@@ -17,7 +17,7 @@ pub struct SqliteDatabase {
 
 impl SqliteDatabase {
     // Initiate connection to Sqlite database at specified path
-    pub fn new(path: &PathBuf) -> Result<Self, DbError> {
+    pub fn new(path: &Path) -> Result<Self, DbError> {
         let connection = Connection::open(&path)?;
 
         let instance = SqliteDatabase { connection };

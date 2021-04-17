@@ -11,7 +11,8 @@ use std::path::PathBuf;
 pub fn install_manifest(browser: &Browser) -> Result<PathBuf, String> {
     // Create native messaging path if it doesn't already exist
     let manifest_path = get_manifest_path(&browser)?;
-    fs::create_dir_all(&manifest_path).map_err(|_| "Failed to create native messaging directory.")?;
+    fs::create_dir_all(&manifest_path)
+        .map_err(|_| "Failed to create native messaging directory.")?;
 
     // Determine path of self/executable
     let exe_path = std::env::current_exe()

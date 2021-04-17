@@ -45,7 +45,7 @@ pub fn map_init_err_friendly_msg(err: &InitError) -> &'static str {
     }
 }
 
-type JSON = serde_json::Value;
+type Json = serde_json::Value;
 
 #[derive(Debug, PartialEq)]
 enum Method {
@@ -121,7 +121,7 @@ impl<T: BukuDatabase> Server<T> {
         }
     }
 
-    fn method_deserializer(&self, payload: JSON) -> Method {
+    fn method_deserializer(&self, payload: Json) -> Method {
         if let Ok(RequestMethod { method }) = serde_json::from_value(payload) {
             match method.as_ref() {
                 "GET" => Method::Get,
@@ -141,7 +141,7 @@ impl<T: BukuDatabase> Server<T> {
         all_bms: &[SavedBookmark],
         bms_offset: BookmarksSplitOffset,
         max_page_size_bytes: BookmarksSplitPayloadSize,
-    ) -> Result<JSON, BookmarksSplitError> {
+    ) -> Result<Json, BookmarksSplitError> {
         let gen_res = |bms: &[SavedBookmark], are_more: bool| {
             json!({
                 "success": true,
@@ -193,7 +193,7 @@ impl<T: BukuDatabase> Server<T> {
     }
 
     // Route requests per the method
-    pub fn router(&self, payload: JSON) -> JSON {
+    pub fn router(&self, payload: Json) -> Json {
         match &self.db {
             Ok(db) => match self.method_deserializer(payload.clone()) {
                 Method::Get => serde_json::from_value::<GetRequest>(payload)
@@ -216,7 +216,7 @@ impl<T: BukuDatabase> Server<T> {
         }
     }
 
-    fn get(&self, db: &T, offset_opt: &Option<usize>) -> JSON {
+    fn get(&self, db: &T, offset_opt: &Option<usize>) -> Json {
         let bookmarks = db.get_all_bookmarks();
         let offset =
             offset_opt.map_or_else(|| BookmarksSplitOffset::None, BookmarksSplitOffset::Offset);
@@ -233,14 +233,14 @@ impl<T: BukuDatabase> Server<T> {
         }
     }
 
-    fn options(&self) -> JSON {
+    fn options(&self) -> Json {
         json!({
             "success": true,
             "binaryVersion": crate_version!(),
         })
     }
 
-    fn post(&self, db: &T, bms: &[UnsavedBookmark]) -> JSON {
+    fn post(&self, db: &T, bms: &[UnsavedBookmark]) -> Json {
         let added = db.add_bookmarks(&bms);
 
         if let Ok(ids) = added {
@@ -253,44 +253,44 @@ impl<T: BukuDatabase> Server<T> {
         }
     }
 
-    fn put(&self, db: &T, bms: &[SavedBookmark]) -> JSON {
+    fn put(&self, db: &T, bms: &[SavedBookmark]) -> Json {
         let update = db.update_bookmarks(&bms);
 
         json!({ "success": update.is_ok() })
     }
 
-    fn delete(&self, db: &T, bm_ids: &[BookmarkId]) -> JSON {
+    fn delete(&self, db: &T, bm_ids: &[BookmarkId]) -> Json {
         let deletion = db.delete_bookmarks(&bm_ids);
 
         json!({ "success": deletion.is_ok() })
     }
 
-    fn fail_generic(&self) -> JSON {
+    fn fail_generic(&self) -> Json {
         json!({ "success": false })
     }
 
-    fn fail_no_method(&self) -> JSON {
+    fn fail_no_method(&self) -> Json {
         json!({
             "success": false,
             "message": "Missing method type.",
         })
     }
 
-    fn fail_unknown_method(&self) -> JSON {
+    fn fail_unknown_method(&self) -> Json {
         json!({
             "success": false,
             "message": "Unrecognised method type.",
         })
     }
 
-    fn fail_bad_payload(&self) -> JSON {
+    fn fail_bad_payload(&self) -> Json {
         json!({
             "success": false,
             "message": "Bad request payload."
         })
     }
 
-    fn fail_init_error(&self, err: &InitError) -> JSON {
+    fn fail_init_error(&self, err: &InitError) -> Json {
         json!({
             "success": false,
             "message": map_init_err_friendly_msg(err),
