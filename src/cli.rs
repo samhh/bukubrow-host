@@ -3,7 +3,8 @@ use crate::manifest::paths::Browser;
 use clap::{crate_authors, crate_name, crate_version, App, Arg, Error as ClapError};
 
 pub enum Argument {
-    InstallBrowserHost(Browser),
+    /// The second piece of data is an optional custom installation dir.
+    InstallBrowserHost(Browser, Option<String>),
     ListBookmarks,
     OpenBookmarks(Vec<BookmarkId>),
 }
@@ -18,7 +19,7 @@ pub enum CliError {
 /// any known flags. An Err value denotes a parsing error, most likely meaning
 /// unrecognised flag(s) were passed. This includes help and version flags
 /// which must be handled outside this function.
-pub fn init() -> Result<Option<Vec<Argument>>, CliError> {
+pub fn init() -> Result<Option<Argument>, CliError> {
     // Nota bene these strings determine the ordering of the help message
     let chrome_arg = "install-chrome";
     let chromium_arg = "install-chromium";
@@ -26,6 +27,7 @@ pub fn init() -> Result<Option<Vec<Argument>>, CliError> {
     let brave_arg = "install-brave";
     let vivaldi_arg = "install-vivaldi";
     let edge_arg = "install-edge";
+    let dir_arg = "install-dir";
     let list_arg = "list";
     let open_arg = "open";
 
@@ -64,6 +66,13 @@ pub fn init() -> Result<Option<Vec<Argument>>, CliError> {
                 .about("Install the native messaging host for Edge"),
         )
         .arg(
+            Arg::new(dir_arg)
+                .long("--install-dir")
+                .about("Specify a custom manifest installation directory")
+                .takes_value(true)
+                .value_name("dir"),
+        )
+        .arg(
             Arg::new(list_arg)
                 .short('l')
                 .long("--list")
@@ -81,49 +90,41 @@ pub fn init() -> Result<Option<Vec<Argument>>, CliError> {
         .try_get_matches()
         .map_err(CliError::Clap)?;
 
-    let install_chrome = matches.is_present(chrome_arg);
-    let install_chromium = matches.is_present(chromium_arg);
-    let install_firefox = matches.is_present(firefox_arg);
-    let install_brave = matches.is_present(brave_arg);
-    let install_vivaldi = matches.is_present(vivaldi_arg);
-    let install_edge = matches.is_present(edge_arg);
-    let list_bookmarks = matches.is_present(list_arg);
-    let open_bookmark_ids = matches.values_of(open_arg);
-
-    let mut args = Vec::with_capacity(7);
-
-    if install_chrome {
-        args.push(Argument::InstallBrowserHost(Browser::Chrome));
-    }
-    if install_chromium {
-        args.push(Argument::InstallBrowserHost(Browser::Chromium));
-    }
-    if install_firefox {
-        args.push(Argument::InstallBrowserHost(Browser::Firefox));
-    }
-    if install_brave {
-        args.push(Argument::InstallBrowserHost(Browser::Brave));
-    }
-    if install_vivaldi {
-        args.push(Argument::InstallBrowserHost(Browser::Vivaldi));
-    }
-    if install_edge {
-        args.push(Argument::InstallBrowserHost(Browser::Edge));
-    }
-    if list_bookmarks {
-        args.push(Argument::ListBookmarks);
-    }
-    if let Some(vals) = open_bookmark_ids {
+    if let Some(vals) = matches.values_of(open_arg) {
         let mut ids = Vec::with_capacity(vals.len());
 
         for val in vals {
             ids.push(val.parse().map_err(|_| CliError::BookmarkIdsParseFailed)?);
         }
 
-        args.push(Argument::OpenBookmarks(ids));
+        return Ok(Some(Argument::OpenBookmarks(ids)));
     }
 
-    Ok(if args.is_empty() { None } else { Some(args) })
+    if matches.is_present(list_arg) {
+        return Ok(Some(Argument::ListBookmarks));
+    }
+
+    let dir = matches.value_of(dir_arg).map(String::from);
+    if matches.is_present(chrome_arg) {
+        return Ok(Some(Argument::InstallBrowserHost(Browser::Chrome, dir)));
+    }
+    if matches.is_present(chromium_arg) {
+        return Ok(Some(Argument::InstallBrowserHost(Browser::Chromium, dir)));
+    }
+    if matches.is_present(firefox_arg) {
+        return Ok(Some(Argument::InstallBrowserHost(Browser::Firefox, dir)));
+    }
+    if matches.is_present(brave_arg) {
+        return Ok(Some(Argument::InstallBrowserHost(Browser::Brave, dir)));
+    }
+    if matches.is_present(vivaldi_arg) {
+        return Ok(Some(Argument::InstallBrowserHost(Browser::Vivaldi, dir)));
+    }
+    if matches.is_present(edge_arg) {
+        return Ok(Some(Argument::InstallBrowserHost(Browser::Edge, dir)));
+    }
+
+    Ok(None)
 }
 
 pub fn exit_with_stdout_err<T: std::fmt::Display>(msg: T) -> ! {

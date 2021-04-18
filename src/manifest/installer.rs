@@ -8,9 +8,13 @@ use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
 
-pub fn install_manifest(browser: &Browser) -> Result<PathBuf, String> {
+pub fn install_manifest(browser: &Browser, path: Option<PathBuf>) -> Result<PathBuf, String> {
     // Create native messaging path if it doesn't already exist
-    let manifest_path = get_manifest_path(&browser)?;
+    let manifest_path = match path {
+        Some(p) => Ok(p),
+        None => get_manifest_path(&browser),
+    }?;
+
     fs::create_dir_all(&manifest_path)
         .map_err(|_| "Failed to create native messaging directory.")?;
 
