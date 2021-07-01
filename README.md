@@ -19,7 +19,8 @@ FLAGS:
     -V, --version             Prints version information
 
 OPTIONS:
-    -o, --open <ID[,ID]>    Open bookmark(s) in the browser by ID
+        --install-dir <dir>    Specify a custom manifest installation directory
+    -o, --open <ID[,ID]>       Open bookmark(s) in the browser by ID
 ```
 
 ## Prerequisites
