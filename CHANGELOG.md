@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [5.3.0] - 2021-07-01
+
+- Added Edge support.
+- Added `--install-dir` option for specifying a custom manifest installation directory.
+
 ## [5.2.0] - 2021-03-26
 
 - Added Vivaldi support.
