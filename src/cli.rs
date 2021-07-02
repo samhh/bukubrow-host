@@ -70,7 +70,7 @@ pub fn init() -> Result<Option<Argument>, CliError> {
                 .long("--install-dir")
                 .about("Specify a custom manifest installation directory")
                 .takes_value(true)
-                .value_name("dir"),
+                .value_name("DIR"),
         )
         .arg(
             Arg::new(list_arg)
