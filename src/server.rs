@@ -151,7 +151,7 @@ impl<T: BukuDatabase> Server<T> {
         };
 
         if all_bms.is_empty() {
-            return Ok(gen_res(&all_bms, false));
+            return Ok(gen_res(all_bms, false));
         }
 
         let offset = bms_offset.unwrap_or(0);
@@ -197,17 +197,17 @@ impl<T: BukuDatabase> Server<T> {
         match &self.db {
             Ok(db) => match self.method_deserializer(payload.clone()) {
                 Method::Get => serde_json::from_value::<GetRequest>(payload)
-                    .map(|req| self.get(&db, &req.data.and_then(|d| d.offset)))
+                    .map(|req| self.get(db, &req.data.and_then(|d| d.offset)))
                     .unwrap_or_else(|_| self.fail_bad_payload()),
                 Method::Options => self.options(),
                 Method::Post => serde_json::from_value::<PostRequest>(payload)
-                    .map(|req| self.post(&db, &req.data.bookmarks))
+                    .map(|req| self.post(db, &req.data.bookmarks))
                     .unwrap_or_else(|_| self.fail_bad_payload()),
                 Method::Put => serde_json::from_value::<PutRequest>(payload)
-                    .map(|req| self.put(&db, &req.data.bookmarks))
+                    .map(|req| self.put(db, &req.data.bookmarks))
                     .unwrap_or_else(|_| self.fail_bad_payload()),
                 Method::Delete => serde_json::from_value::<DeleteRequest>(payload)
-                    .map(|req| self.delete(&db, &req.data.bookmark_ids))
+                    .map(|req| self.delete(db, &req.data.bookmark_ids))
                     .unwrap_or_else(|_| self.fail_bad_payload()),
                 Method::Unknown => self.fail_unknown_method(),
                 Method::None => self.fail_no_method(),
@@ -241,7 +241,7 @@ impl<T: BukuDatabase> Server<T> {
     }
 
     fn post(&self, db: &T, bms: &[UnsavedBookmark]) -> Json {
-        let added = db.add_bookmarks(&bms);
+        let added = db.add_bookmarks(bms);
 
         if let Ok(ids) = added {
             json!({
@@ -254,13 +254,13 @@ impl<T: BukuDatabase> Server<T> {
     }
 
     fn put(&self, db: &T, bms: &[SavedBookmark]) -> Json {
-        let update = db.update_bookmarks(&bms);
+        let update = db.update_bookmarks(bms);
 
         json!({ "success": update.is_ok() })
     }
 
     fn delete(&self, db: &T, bm_ids: &[BookmarkId]) -> Json {
-        let deletion = db.delete_bookmarks(&bm_ids);
+        let deletion = db.delete_bookmarks(bm_ids);
 
         json!({ "success": deletion.is_ok() })
     }
