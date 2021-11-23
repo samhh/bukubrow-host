@@ -24,6 +24,7 @@ pub fn init() -> Result<Option<Argument>, CliError> {
     let chrome_arg = "install-chrome";
     let chromium_arg = "install-chromium";
     let firefox_arg = "install-firefox";
+    let librewolf_arg = "install-librewolf";
     let brave_arg = "install-brave";
     let vivaldi_arg = "install-vivaldi";
     let edge_arg = "install-edge";
@@ -51,6 +52,11 @@ pub fn init() -> Result<Option<Argument>, CliError> {
                 .about("Install the native messaging host for Firefox"),
         )
         .arg(
+            Arg::new(librewolf_arg)
+                .long("--install-librewolf")
+                .about("Install the native messaging host for LibreWolf"),
+        )
+        .arg(
             Arg::new(brave_arg)
                 .long("--install-brave")
                 .about("Install the native messaging host for Brave"),
@@ -70,7 +76,7 @@ pub fn init() -> Result<Option<Argument>, CliError> {
                 .long("--install-dir")
                 .about("Specify a custom manifest installation directory")
                 .takes_value(true)
-                .value_name("dir"),
+                .value_name("DIR"),
         )
         .arg(
             Arg::new(list_arg)
@@ -113,6 +119,9 @@ pub fn init() -> Result<Option<Argument>, CliError> {
     }
     if matches.is_present(firefox_arg) {
         return Ok(Some(Argument::InstallBrowserHost(Browser::Firefox, dir)));
+    }
+    if matches.is_present(librewolf_arg) {
+        return Ok(Some(Argument::InstallBrowserHost(Browser::LibreWolf, dir)));
     }
     if matches.is_present(brave_arg) {
         return Ok(Some(Argument::InstallBrowserHost(Browser::Brave, dir)));

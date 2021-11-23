@@ -6,13 +6,15 @@ use super::targets::firefox::FirefoxHost;
 use crate::config::NAME;
 use std::fs;
 use std::io::Write;
+#[cfg(target_os = "windows")]
+use std::path::Path;
 use std::path::PathBuf;
 
 pub fn install_manifest(browser: &Browser, path: Option<PathBuf>) -> Result<PathBuf, String> {
     // Create native messaging path if it doesn't already exist
     let manifest_path = match path {
         Some(p) => Ok(p),
-        None => get_manifest_path(&browser),
+        None => get_manifest_path(browser),
     }?;
 
     fs::create_dir_all(&manifest_path)
@@ -33,7 +35,7 @@ pub fn install_manifest(browser: &Browser, path: Option<PathBuf>) -> Result<Path
 
     // Write manifest to created file
     let manifest = match browser {
-        Browser::Firefox => serde_json::to_string(&FirefoxHost::new(exe_path)),
+        Browser::Firefox | Browser::LibreWolf => serde_json::to_string(&FirefoxHost::new(exe_path)),
         _ => serde_json::to_string(&ChromeHost::new(exe_path)),
     }
     .map_err(|_| "Failed to serialise manifest.")?;
@@ -43,7 +45,7 @@ pub fn install_manifest(browser: &Browser, path: Option<PathBuf>) -> Result<Path
 
     // Register regkey
     #[cfg(target_os = "windows")]
-    register_regkey(&browser, &full_write_path)?;
+    register_regkey(browser, &full_write_path)?;
 
     Ok(full_write_path)
 }
@@ -52,8 +54,8 @@ pub fn install_manifest(browser: &Browser, path: Option<PathBuf>) -> Result<Path
 const REGKEY: &str = NAME;
 
 #[cfg(target_os = "windows")]
-fn register_regkey(browser: &Browser, json_path: &PathBuf) -> Result<(), &'static str> {
-    let path_prefix = get_regkey_path(&browser).ok_or("Failed to get regkey path.")?;
+fn register_regkey(browser: &Browser, json_path: &Path) -> Result<(), &'static str> {
+    let path_prefix = get_regkey_path(browser).ok_or("Failed to get regkey path.")?;
     let path = PathBuf::from(path_prefix).join(REGKEY);
 
     let hkcu = winreg::RegKey::predef(winreg::enums::HKEY_CURRENT_USER);

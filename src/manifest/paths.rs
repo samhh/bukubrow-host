@@ -7,6 +7,7 @@ pub enum Browser {
     Chromium,
     Brave,
     Firefox,
+    LibreWolf,
     Vivaldi,
     Edge,
 }
@@ -20,6 +21,7 @@ pub fn get_manifest_path(browser: &Browser) -> Result<PathBuf, String> {
             Browser::Chromium => Ok(".config/chromium/NativeMessagingHosts/"),
             Browser::Brave => Ok(".config/BraveSoftware/Brave-Browser/NativeMessagingHosts/"),
             Browser::Firefox => Ok(".mozilla/native-messaging-hosts/"),
+            Browser::LibreWolf => Ok(".librewolf/native-messaging-hosts/"),
             Browser::Vivaldi => Ok(".config/vivaldi/NativeMessagingHosts/"),
             Browser::Edge => Ok(".config/microsoft-edge-dev/NativeMessagingHosts/"),
         },
@@ -32,13 +34,17 @@ pub fn get_manifest_path(browser: &Browser) -> Result<PathBuf, String> {
                 Ok("Library/Application Support/BraveSoftware/Brave-Browser/NativeMessagingHosts/")
             }
             Browser::Firefox => Ok("Library/Application Support/Mozilla/NativeMessagingHosts/"),
+            Browser::LibreWolf => Ok("Library/Application Support/LibreWolf/NativeMessagingHosts/"),
             Browser::Vivaldi => Ok("Library/Application Support/Vivaldi/NativeMessagingHosts/"),
             Browser::Edge => Ok("Library/Microsoft/Edge/NativeMessagingHosts/"),
         },
         OS::Windows => match browser {
             // Only the registry key matters on Windows, so just use the standard appdata paths.
             Browser::Chrome => Ok(r"AppData\Local\Google\Chrome\NativeMessagingHosts\"),
-            Browser::Firefox => Ok(r"AppData\Roaming\Mozilla\NativeMessagingHosts\"),
+            // LibreWolf and Firefox share the same registry key, so they should also share the same directory
+            Browser::Firefox | Browser::LibreWolf => {
+                Ok(r"AppData\Roaming\Mozilla\NativeMessagingHosts\")
+            }
             Browser::Edge => Ok(r"AppData\Local\Microsoft\Edge\NativeMessagingHosts\"),
             browser => Err(format!("{:?} is not yet supported on Windows.", browser)),
         },
@@ -52,7 +58,7 @@ pub fn get_manifest_path(browser: &Browser) -> Result<PathBuf, String> {
 pub fn get_regkey_path(browser: &Browser) -> Option<&'static str> {
     match browser {
         Browser::Chrome => Some(r"Software\Google\Chrome\NativeMessagingHosts"),
-        Browser::Firefox => Some(r"Software\Mozilla\NativeMessagingHosts"),
+        Browser::Firefox | Browser::LibreWolf => Some(r"Software\Mozilla\NativeMessagingHosts"),
         Browser::Edge => Some(r"Software\Microsoft\Edge\NativeMessagingHosts"),
         _ => None,
     }
