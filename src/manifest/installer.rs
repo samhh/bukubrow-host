@@ -33,7 +33,7 @@ pub fn install_manifest(browser: &Browser, path: Option<PathBuf>) -> Result<Path
 
     // Write manifest to created file
     let manifest = match browser {
-        Browser::Firefox => serde_json::to_string(&FirefoxHost::new(exe_path)),
+        Browser::Firefox | Browser::LibreWolf => serde_json::to_string(&FirefoxHost::new(exe_path)),
         _ => serde_json::to_string(&ChromeHost::new(exe_path)),
     }
     .map_err(|_| "Failed to serialise manifest.")?;
