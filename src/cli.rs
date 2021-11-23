@@ -90,7 +90,7 @@ pub fn init() -> Result<Option<Argument>, CliError> {
                 .long("--open")
                 .about("Open bookmark(s) in the browser by ID")
                 .takes_value(true)
-                .value_delimiter(",")
+                .value_delimiter(',')
                 .value_name("ID[,ID]"),
         )
         .try_get_matches()
