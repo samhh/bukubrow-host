@@ -40,7 +40,9 @@ pub fn get_manifest_path(browser: &Browser) -> Result<PathBuf, String> {
         },
         OS::Windows => match browser {
             // LibreWolf and Firefox share the same registry key, so they should also share the same directory
-            Browser::Firefox | Browser::LibreWolf => Ok(r"AppData\Roaming\Mozilla\NativeMessagingHosts\"),
+            Browser::Firefox | Browser::LibreWolf => {
+                Ok(r"AppData\Roaming\Mozilla\NativeMessagingHosts\")
+            }
             browser => Err(format!("{:?} is not yet supported on Windows.", browser)),
         },
         os => Err(format!("Platform \"{}\" is not yet supported.", os)),
