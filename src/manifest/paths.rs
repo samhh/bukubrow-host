@@ -39,10 +39,13 @@ pub fn get_manifest_path(browser: &Browser) -> Result<PathBuf, String> {
             Browser::Edge => Ok("Library/Microsoft/Edge/NativeMessagingHosts/"),
         },
         OS::Windows => match browser {
+            // Only the registry key matters on Windows, so just use the standard appdata paths.
+            Browser::Chrome => Ok(r"AppData\Local\Google\Chrome\NativeMessagingHosts\"),
             // LibreWolf and Firefox share the same registry key, so they should also share the same directory
             Browser::Firefox | Browser::LibreWolf => {
                 Ok(r"AppData\Roaming\Mozilla\NativeMessagingHosts\")
             }
+            Browser::Edge => Ok(r"AppData\Local\Microsoft\Edge\NativeMessagingHosts\"),
             browser => Err(format!("{:?} is not yet supported on Windows.", browser)),
         },
         os => Err(format!("Platform \"{}\" is not yet supported.", os)),
@@ -54,7 +57,9 @@ pub fn get_manifest_path(browser: &Browser) -> Result<PathBuf, String> {
 #[cfg(target_os = "windows")]
 pub fn get_regkey_path(browser: &Browser) -> Option<&'static str> {
     match browser {
+        Browser::Chrome => Some(r"Software\Google\Chrome\NativeMessagingHosts"),
         Browser::Firefox | Browser::LibreWolf => Some(r"Software\Mozilla\NativeMessagingHosts"),
+        Browser::Edge => Some(r"Software\Microsoft\Edge\NativeMessagingHosts"),
         _ => None,
     }
 }
