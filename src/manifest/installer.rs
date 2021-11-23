@@ -6,7 +6,9 @@ use super::targets::firefox::FirefoxHost;
 use crate::config::NAME;
 use std::fs;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+#[cfg(target_os = "windows")]
+use std::path::Path;
+use std::path::PathBuf;
 
 pub fn install_manifest(browser: &Browser, path: Option<PathBuf>) -> Result<PathBuf, String> {
     // Create native messaging path if it doesn't already exist
