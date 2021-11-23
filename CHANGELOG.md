@@ -2,6 +2,11 @@
 
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [5.4.0] - 2021-11-23
+
+- Added Librewolf support.
+- Added Chrome and Edge support on Windows.
+
 ## [5.3.0] - 2021-07-01
 
 - Added Edge support.
