@@ -15,6 +15,7 @@
             cargo
             clippy
             git
+            rustfmt
             sqlite
           ];
         };

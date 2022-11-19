@@ -1,6 +1,6 @@
 use crate::buku::types::BookmarkId;
 use crate::manifest::paths::Browser;
-use clap::{crate_authors, crate_name, crate_version, Command, Arg, Error as ClapError};
+use clap::{crate_authors, crate_name, crate_version, Arg, Command, Error as ClapError};
 
 pub enum Argument {
     /// The second piece of data is an optional custom installation dir.
