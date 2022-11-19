@@ -12,11 +12,11 @@ mod server;
 
 use crate::buku::database::{BukuDatabase, SqliteDatabase};
 use crate::buku::utils::get_db_path;
-use crate::cli::{exit_with_stdout_err, Argument, CliError};
+use crate::cli::{exit_with_stdout_err, Argument};
 use crate::manifest::installer::install_manifest;
 use crate::native_messaging::NativeMessagingError;
 use crate::server::{map_init_err_friendly_msg, InitError, Server};
-use clap::ErrorKind;
+use clap::error::ErrorKind;
 use std::path::PathBuf;
 
 fn main() {
@@ -28,14 +28,9 @@ fn main() {
 
     // Native messaging can provide its own arguments we don't care about, so
     // ignore any unrecognised arguments
-    let recognised_arg = cli::init().unwrap_or_else(|err| match err {
-        CliError::Clap(clap_err) => match clap_err.kind {
-            ErrorKind::DisplayHelp | ErrorKind::DisplayVersion => clap_err.exit(),
-            _ => None,
-        },
-        CliError::BookmarkIdsParseFailed => {
-            exit_with_stdout_err("Failed to parse bookmark ID(s).");
-        }
+    let recognised_arg = cli::init().unwrap_or_else(|err| match err.kind() {
+        ErrorKind::DisplayHelp | ErrorKind::DisplayVersion => err.exit(),
+        _ => None,
     });
 
     // Only continue to native messaging if no recognised flags are found
