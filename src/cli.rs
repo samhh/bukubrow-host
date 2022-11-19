@@ -108,7 +108,7 @@ pub fn init() -> Result<Option<Argument>, ClapError> {
         return Ok(Some(Argument::ListBookmarks));
     }
 
-    let dir = matches.get_one::<String>(dir_arg).map(|x| x.clone());
+    let dir = matches.get_one::<String>(dir_arg).cloned();
     if matches.contains_id(chrome_arg) {
         return Ok(Some(Argument::InstallBrowserHost(Browser::Chrome, dir)));
     }

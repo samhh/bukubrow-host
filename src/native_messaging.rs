@@ -8,7 +8,7 @@ type Json = serde_json::Value;
 /// will be compared against later.
 pub const ONE_MEGABYTE_BYTES: &usize = &1_048_576;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum NativeMessagingError {
     /// Chrome restricts message sizes to a maximum of 1MB.
     MessageTooLarge(usize),

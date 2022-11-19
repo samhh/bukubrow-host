@@ -158,7 +158,7 @@ impl<T: BukuDatabase> Server<T> {
         let bms = &all_bms[offset..];
 
         match max_page_size_bytes {
-            BookmarksSplitPayloadSize::Unlimited => Ok(gen_res(&bms.to_vec(), false)),
+            BookmarksSplitPayloadSize::Unlimited => Ok(gen_res(bms, false)),
             BookmarksSplitPayloadSize::Limited(max_size) => {
                 let overhead = serde_json::to_vec(&gen_res(&[], false))
                     .map_err(|_| BookmarksSplitError::Unknown)?
@@ -176,12 +176,12 @@ impl<T: BukuDatabase> Server<T> {
                             return Err(BookmarksSplitError::BookmarkLargerThanMaxPayloadSize);
                         }
 
-                        return Ok(gen_res(&all_bms[offset..offset + i].to_vec(), true));
+                        return Ok(gen_res(&all_bms[offset..offset + i], true));
                     }
 
                     let is_last_loop = i == bms.len() - 1;
                     if is_last_loop {
-                        return Ok(gen_res(&bms.to_vec(), false));
+                        return Ok(gen_res(bms, false));
                     }
 
                     size_so_far = new_size_so_far;
