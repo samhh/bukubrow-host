@@ -1,6 +1,6 @@
 use super::types::{BookmarkId, SavedBookmark, UnsavedBookmark};
 pub use rusqlite::Error as DbError;
-use rusqlite::{types::ToSql, Connection, Row, NO_PARAMS};
+use rusqlite::{types::ToSql, Connection, Row};
 use std::path::Path;
 
 pub trait BukuDatabase {
@@ -44,7 +44,7 @@ impl BukuDatabase for SqliteDatabase {
         let mut stmt = self.connection.prepare(query)?;
 
         let bookmarks = stmt
-            .query_map(NO_PARAMS, map_db_bookmark)?
+            .query_map([], map_db_bookmark)?
             .filter_map(|bm| bm.ok())
             .collect();
 
@@ -62,7 +62,7 @@ impl BukuDatabase for SqliteDatabase {
         let mut stmt = self.connection.prepare(&query)?;
 
         let bookmarks = stmt
-            .query_map(NO_PARAMS, map_db_bookmark)?
+            .query_map([], map_db_bookmark)?
             .filter_map(|bm| bm.ok())
             .collect();
 
