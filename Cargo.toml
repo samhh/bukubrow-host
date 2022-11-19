@@ -2,7 +2,7 @@
 name = "bukubrow"
 version = "5.4.0"
 authors = ["Sam A. Horvath-Hunt"]
-edition = "2018"
+edition = "2021"
 
 [[bin]]
 name = "bukubrow"
