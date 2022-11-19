@@ -13,6 +13,7 @@
             buku
             bukubrow
             cargo
+            clippy
             git
             sqlite
           ];
