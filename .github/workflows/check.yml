@@ -12,12 +12,41 @@ jobs:
                   ~/.cargo/git
                   target
                 key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-            - name: Check
-              run: cargo check
-            - name: Test
-              run: cargo test
-            - name: Lint
-              # See: https://github.com/rust-lang/rust-clippy/issues/1209
-              run: RUSTFLAGS="-D warnings" cargo clippy --all-targets
-            - name: Check formatting
-              run: cargo fmt -- --check
+            - run: cargo check
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+            - uses: actions/cache@v3
+              with:
+                path: |
+                  ~/.cargo/registry
+                  ~/.cargo/git
+                  target
+                key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            - run: cargo test
+    lint:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+            - uses: actions/cache@v3
+              with:
+                path: |
+                  ~/.cargo/registry
+                  ~/.cargo/git
+                  target
+                key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            # See: https://github.com/rust-lang/rust-clippy/issues/1209
+            - run: RUSTFLAGS="-D warnings" cargo clippy --all-targets
+    fmt:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+            - uses: actions/cache@v3
+              with:
+                path: |
+                  ~/.cargo/registry
+                  ~/.cargo/git
+                  target
+                key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            - run: cargo fmt -- --check
